@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lien invalide - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+</head>
+<body class="auth-body">
+    <div class="auth-card">
+        <h1>Lien invalide ou expiré</h1>
+        <p>Le lien de vérification n'est plus valide.</p>
+        <p class="auth-link">
+            <a href="{% url 'accounts:login' %}">Retour à la connexion</a>
+        </p>
+    </div>
+</body>
+</html>

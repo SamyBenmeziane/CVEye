@@ -1,0 +1,137 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/dashboard.css' %}">
+</head>
+<body class="install-page-body theme-dark">
+    <div class="theme-toggle-bar">
+        <button type="button" id="themeToggleBtn" class="theme-toggle-btn">
+            Basculer en mode clair
+        </button>
+    </div>
+
+    <div class="install-wrapper">
+        <div class="install-card">
+            <div class="install-header">
+                <div class="install-logo-wrapper">
+                    <img src="{% static 'app_dashboard/img/logo_cveye.png' %}" alt="Logo CVEye" class="install-logo-image">
+                </div>
+                <h1>Initialisation de CVEye</h1>
+                <p>Configuration initiale de la plateforme de scan et création du premier administrateur.</p>
+            </div>
+
+            {% if error_message %}
+                <div class="install-alert install-alert-error">
+                    {{ error_message }}
+                </div>
+            {% endif %}
+
+            {% if form.non_field_errors %}
+                <div class="install-alert install-alert-error">
+                    {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" class="install-form">
+                {% csrf_token %}
+
+                <div class="install-section">
+                    <h2>Informations générales</h2>
+                    <div class="install-field">
+                        <label for="{{ form.site_name.id_for_label }}">Nom du site</label>
+                        {{ form.site_name }}
+                        {% for error in form.site_name.errors %}
+                            <small class="field-error">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="install-section">
+                    <h2>Premier administrateur</h2>
+                    <div class="install-grid">
+                        <div class="install-field">
+                            <label for="{{ form.admin_email.id_for_label }}">Email administrateur</label>
+                            {{ form.admin_email }}
+                            {% for error in form.admin_email.errors %}
+                                <small class="field-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+
+                        <div class="install-field">
+                            <label for="{{ form.admin_password.id_for_label }}">Mot de passe</label>
+                            {{ form.admin_password }}
+                            {% for error in form.admin_password.errors %}
+                                <small class="field-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+
+                        <div class="install-field">
+                            <label for="{{ form.admin_password_confirm.id_for_label }}">Confirmation du mot de passe</label>
+                            {{ form.admin_password_confirm }}
+                            {% for error in form.admin_password_confirm.errors %}
+                                <small class="field-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="install-section">
+                    <h2>Configuration SMTP</h2>
+                    <div class="install-grid">
+                        <div class="install-field">
+                            <label for="{{ form.smtp_host.id_for_label }}">SMTP Host</label>
+                            {{ form.smtp_host }}
+                        </div>
+
+                        <div class="install-field">
+                            <label for="{{ form.smtp_port.id_for_label }}">SMTP Port</label>
+                            {{ form.smtp_port }}
+                        </div>
+
+                        <div class="install-field">
+                            <label for="{{ form.smtp_username.id_for_label }}">SMTP Username</label>
+                            {{ form.smtp_username }}
+                        </div>
+
+                        <div class="install-field">
+                            <label for="{{ form.smtp_password.id_for_label }}">SMTP Password</label>
+                            {{ form.smtp_password }}
+                        </div>
+
+                        <div class="install-field">
+                            <label for="{{ form.smtp_from_email.id_for_label }}">Email expéditeur</label>
+                            {{ form.smtp_from_email }}
+                        </div>
+                    </div>
+
+                    <div class="install-checkbox-row">
+                        <label class="install-checkbox">
+                            {{ form.smtp_use_tls }}
+                            <span>Utiliser TLS</span>
+                        </label>
+
+                        <label class="install-checkbox">
+                            {{ form.smtp_use_ssl }}
+                            <span>Utiliser SSL</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="install-actions">
+                    <button type="submit" class="install-submit-btn">
+                        Finaliser l’installation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'app_dashboard/js/theme.js' %}"></script>
+</body>
+</html>

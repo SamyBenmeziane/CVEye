@@ -1,0 +1,275 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family: Inter, Arial, sans-serif;
+    transition: background .25s ease, color .25s ease;
+}
+
+.theme-dark{
+    --bg:#050816;
+    --panel:#0b1020;
+    --panel-2:#0d1326;
+    --border:#18233f;
+    --text:#f4f7ff;
+    --muted:#8d97b5;
+    --blue:#2f6df6;
+    --blue-2:#1d4ed8;
+    --red:#ff4d5e;
+    --shadow:0 10px 30px rgba(0,0,0,.25);
+
+    background:
+        radial-gradient(circle at top right, rgba(47,109,246,.10), transparent 20%),
+        radial-gradient(circle at bottom left, rgba(139,92,246,.08), transparent 22%),
+        #050816;
+    color:var(--text);
+}
+
+.theme-light{
+    --bg:#f4f7fb;
+    --panel:#ffffff;
+    --panel-2:#f8fafc;
+    --border:#d9e2f0;
+    --text:#0f172a;
+    --muted:#5b6475;
+    --blue:#2f6df6;
+    --blue-2:#1d4ed8;
+    --red:#ff4d5e;
+    --shadow:0 10px 30px rgba(15, 23, 42, .08);
+
+    background:
+        radial-gradient(circle at top right, rgba(47,109,246,.08), transparent 22%),
+        radial-gradient(circle at bottom left, rgba(16,185,129,.06), transparent 24%),
+        #f4f7fb;
+    color:var(--text);
+}
+
+.install-page-body{
+    min-height:100vh;
+}
+
+.theme-toggle-bar{
+    width:100%;
+    display:flex;
+    justify-content:flex-end;
+    padding:20px 20px 0 20px;
+}
+
+.theme-toggle-btn{
+    height:42px;
+    padding:0 16px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--text);
+    cursor:pointer;
+    font-weight:600;
+    box-shadow:var(--shadow);
+}
+
+.install-wrapper{
+    min-height:calc(100vh - 62px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px 16px 32px 16px;
+}
+
+.install-card{
+    width:100%;
+    max-width:980px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:24px;
+    box-shadow:var(--shadow);
+    padding:32px;
+}
+
+.install-header{
+    text-align:center;
+    margin-bottom:28px;
+}
+
+.install-logo-wrapper{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin:0 auto 16px auto;
+}
+
+.install-logo-image{
+    max-width:320px;
+    width:100%;
+    height:auto;
+    display:block;
+}
+
+.install-header h1{
+    font-size:30px;
+    margin-bottom:8px;
+    color:var(--text);
+}
+
+.install-header p{
+    color:var(--muted);
+    font-size:14px;
+    max-width:700px;
+    margin:0 auto;
+    line-height:1.7;
+}
+
+.install-form{
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+}
+
+.install-section{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:20px;
+}
+
+.install-section h2{
+    font-size:18px;
+    margin-bottom:16px;
+    color:var(--text);
+}
+
+.install-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+}
+
+.install-field{
+    display:flex;
+    flex-direction:column;
+}
+
+.install-field label{
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:8px;
+}
+
+.install-field input{
+    width:100%;
+    height:46px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:12px;
+    padding:0 14px;
+    outline:none;
+}
+
+.install-field input:focus{
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(47,109,246,.12);
+}
+
+.install-checkbox-row{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+    margin-top:18px;
+}
+
+.install-checkbox{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--text);
+    font-size:14px;
+}
+
+.install-checkbox input{
+    width:18px;
+    height:18px;
+    accent-color:var(--blue);
+}
+
+.install-actions{
+    display:flex;
+    justify-content:flex-end;
+}
+
+.install-submit-btn{
+    min-width:220px;
+    height:46px;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    background:linear-gradient(135deg,var(--blue),#3b82f6);
+    color:#fff;
+    font-weight:600;
+}
+
+.install-submit-btn:hover{
+    background:linear-gradient(135deg,var(--blue-2),var(--blue));
+}
+
+.install-alert{
+    padding:14px 16px;
+    border-radius:14px;
+    margin-bottom:18px;
+    font-size:14px;
+}
+
+.install-alert-error{
+    background:rgba(255,77,94,.10);
+    color:#b42318;
+    border:1px solid rgba(255,77,94,.20);
+}
+
+.theme-dark .install-alert-error{
+    color:#ffb6bf;
+    border:1px solid rgba(255,77,94,.22);
+}
+
+.field-error{
+    color:#b42318;
+    margin-top:6px;
+    font-size:12px;
+}
+
+.theme-dark .field-error{
+    color:#ff9aa6;
+}
+
+@media (max-width: 768px){
+    .install-card{
+        padding:20px;
+        border-radius:18px;
+    }
+
+    .install-grid{
+        grid-template-columns:1fr;
+    }
+
+    .install-header h1{
+        font-size:24px;
+    }
+
+    .install-actions{
+        justify-content:stretch;
+    }
+
+    .install-submit-btn{
+        width:100%;
+    }
+
+    .install-logo-image{
+        max-width:240px;
+    }
+
+    .theme-toggle-bar{
+        justify-content:center;
+        padding:16px 16px 0 16px;
+    }
+}

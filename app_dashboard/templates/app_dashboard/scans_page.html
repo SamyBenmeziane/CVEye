@@ -1,0 +1,347 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scans - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/scans_page.css' %}">
+</head>
+<body>
+<div class="app-layout sidebar-open" id="appLayout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+            <div class="brand">
+                <div class="brand-logo">[]</div>
+                <div class="brand-text">
+                    <div class="brand-title">CVEye</div>
+                    <div class="brand-subtitle">Security Platform</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{% url 'dashboard' %}" class="nav-link">
+                <span class="nav-label">Tableau de bord</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link">
+                <span class="nav-label">Targets</span>
+            </a>
+            <a href="{% url 'scans' %}" class="nav-link active">
+                <span class="nav-label">Scans</span>
+            </a>
+            <a href="#" class="nav-link">
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            <a href="#" class="nav-link">
+                <span class="nav-label">Alertes</span>
+            </a>
+            <a href="#" class="nav-link">
+                <span class="nav-label">Rapports</span>
+            </a>
+            <a href="#" class="nav-link">
+                <span class="nav-label">Réglages</span>
+            </a>
+            <a href="{% url 'accounts:logout' %}" class="nav-link">
+                <span class="nav-label">Déconnexion</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-avatar">
+                {{ request.user.username|slice:":1"|upper }}
+            </div>
+            <div class="sidebar-user-text">
+                <div class="user-name">{{ request.user.username }}</div>
+                <div class="user-email">{{ request.user.email }}</div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Ouvrir ou fermer la barre laterale">
+                    ==
+                </button>
+
+                <div class="topbar-search">
+                    <input type="text" placeholder="Search targets, CVEs, or scans...">
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <div class="system-pill">All Systems Operational</div>
+
+                <button type="button" class="topbar-icon" aria-label="Notifications" title="Notifications">
+                    🔔
+                </button>
+
+                <div class="topbar-user" title="{{ request.user.username }}">
+                    {{ request.user.username|slice:":1"|upper }}
+                </div>
+            </div>
+        </header>
+
+        <section class="page-content">
+            <div class="page-header">
+                <div>
+                    <h1>Scans</h1>
+                    <p>
+                        {% if scans %}
+                            {{ scans|length }} scan{{ scans|length|pluralize }} enregistre{{ scans|length|pluralize }}
+                        {% else %}
+                            Aucun scan lance pour le moment
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="scan-form-header">
+                    <a href="{% url 'targets' %}" class="primary-btn">Aller aux targets</a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'error' %}error{% else %}success{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="filter-card">
+                <form method="get" style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+                    <div>
+                        <label for="target-filter">Filtrer par cible</label>
+                        <select id="target-filter" name="target">
+                            <option value="">Toutes les cibles</option>
+                            {% for target in targets %}
+                                <option value="{{ target.id }}" {% if selected_target_id == target.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ target.adresse }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="status-filter">Filtrer par statut</label>
+                        <select id="status-filter" name="status">
+                            <option value="">Tous les statuts</option>
+                            <option value="complete" {% if selected_status == "complete" %}selected{% endif %}>Complete</option>
+                            <option value="echoue" {% if selected_status == "echoue" %}selected{% endif %}>Échoué</option>
+                            <option value="en_cours" {% if selected_status == "en_cours" %}selected{% endif %}>En cours</option>
+                            <option value="en_attente" {% if selected_status == "en_attente" %}selected{% endif %}>En attente</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="primary-btn">Filtrer</button>
+                    <a href="{% url 'scans' %}" class="details-btn">Réinitialiser</a>
+                </form>
+            </div>
+
+            <div class="table-card">
+                <table class="scan-table">
+                    <thead>
+                    <tr>
+                        <th>SERVEUR</th>
+                        <th>STATUT</th>
+                        <th>TEMPS DU SCAN</th>
+                        <th>DUREE</th>
+                        <th>RESULTATS</th>
+                        <th class="th-right">ACTIONS</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% if scans %}
+                        {% for scan in scans %}
+                        <tr>
+                            <td>
+                                <div class="target-cell">
+                                    <div class="target-icon">[]</div>
+                                    <div>
+                                        <div class="target-name">{{ scan.cible.adresse }}</div>
+                                        <div class="target-sub">{{ scan.version_scanner }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if scan.statut == "complete" %}
+                                    <span class="status-badge completed">Completed</span>
+                                {% elif scan.statut == "echoue" %}
+                                    <span class="status-badge failed">Failed</span>
+                                {% else %}
+                                    <span class="status-badge neutral">{{ scan.statut }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="cell-main">{{ scan.date_debut|date:"Y-m-d H:i:s" }}</div>
+                            </td>
+                            <td>
+                                <div class="cell-main">
+                                    {% if scan.duration_seconds is not None %}
+                                        {{ scan.duration_seconds }} s
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="result-line">
+                                    Services:
+                                    <span class="result-blue">{{ scan.service_count }}</span>
+                                </div>
+                                <div class="result-line">
+                                    Vulnerabilities:
+                                    <span class="result-red">{{ scan.vulnerability_count }}</span>
+                                </div>
+                            </td>
+                            <td class="th-right">
+                                {% if selected_scan and scan.id == selected_scan.id %}
+                                    <button type="button" class="details-btn" id="openDetailsBtn">
+                                        View Details
+                                    </button>
+                                {% else %}
+                                    <span class="details-btn">Latest Above</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="empty-row">
+                                Lance un scan pour afficher les resultats ici.
+                            </td>
+                        </tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div class="modal-backdrop" id="scanDetailsModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div>
+                <h2>Details du Scan</h2>
+                <p>{% if selected_scan %}{{ selected_scan.cible.adresse }}{% else %}Aucune cible{% endif %}</p>
+            </div>
+            <button class="modal-close" id="closeDetailsBtn" type="button">X</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Status</div>
+                {% if selected_scan %}
+                    {% if selected_scan.statut == "complete" %}
+                        <div class="status-badge completed">Complete</div>
+                    {% elif selected_scan.statut == "echoue" %}
+                        <div class="status-badge failed">Echoue</div>
+                    {% else %}
+                        <div class="status-badge neutral">{{ selected_scan.statut }}</div>
+                    {% endif %}
+                {% else %}
+                    <div class="status-badge neutral">En attente</div>
+                {% endif %}
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-label">Services Found</div>
+                <div class="stat-value blue">
+                    {% if selected_scan %}{{ selected_scan.service_count }}{% else %}0{% endif %}
+                </div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-label">Vulnerabilites</div>
+                <div class="stat-value red">
+                    {% if selected_scan %}{{ selected_scan.vulnerability_count }}{% else %}0{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="details-section">
+            <h3>Ports Ouverts et Services</h3>
+
+            <div class="details-table-wrap">
+                <table class="details-table">
+                    <thead>
+                    <tr>
+                        <th>Port</th>
+                        <th>Protocole</th>
+                        <th>Service</th>
+                        <th>Version</th>
+                        <th>Statut</th>
+                        <th>Autres</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% if resultat %}
+                        {% for r in resultat %}
+                            <tr>
+                                <td>{{ r.port }}</td>
+                                <td>TCP</td>
+                                <td>{{ r.service|default:"unknown"|title }}</td>
+                                <td>{{ r.display_version }}</td>
+                                <td><span class="mini-status">ouvert</span></td>
+                                <td>
+                                    <div class="autres-cell">
+                                        {% if r.banner %}
+                                            <div class="autres-item">
+                                                <span class="autres-label">Banniere:</span>
+                                                <span>{{ r.banner }}</span>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if r.product %}
+                                            <div class="autres-item">
+                                                <span class="autres-label">Produit:</span>
+                                                <span>{{ r.product }}</span>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if r.vulnerabilities %}
+                                            <div class="autres-item">
+                                                <span class="autres-label">CVEs:</span>
+                                                <div class="autres-block">
+                                                    {% for vuln in r.vulnerabilities %}
+                                                        <div>{{ vuln.cve_id }}{% if vuln.severity %} - {{ vuln.severity }}{% endif %}</div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if r.headers_without_server %}
+                                            <div class="autres-item">
+                                                <span class="autres-label">En-tetes:</span>
+                                                <div class="autres-block">
+                                                    {% for k, v in r.headers_without_server.items %}
+                                                        <div>{{ k }} : {{ v }}</div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if not r.banner and not r.product and not r.headers_without_server and not r.vulnerabilities %}
+                                            -
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="empty-row">Aucun port ouvert a afficher.</td>
+                        </tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'app_dashboard/js/scans_page.js' %}"></script>
+</body>
+</html>

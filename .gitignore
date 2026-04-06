@@ -1,0 +1,9 @@
+venv/
+.env
+.svn/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.log

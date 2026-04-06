@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email vérifié - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+</head>
+<body class="auth-body">
+    <div class="auth-card">
+        {% if already_used %}
+            <h1>Lien déjà utilisé</h1>
+            <p>Ce lien a déjà été utilisé. Vous pouvez vous connecter.</p>
+        {% else %}
+            <h1>Email vérifié</h1>
+            <p>Votre compte a bien été activé.</p>
+        {% endif %}
+
+        <p class="auth-link">
+            <a href="{% url 'accounts:login' %}">Aller à la connexion</a>
+        </p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email envoyé - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+</head>
+<body class="auth-body">
+    <div class="auth-card">
+        <h1>Vérifiez votre email</h1>
+
+        {% if resent %}
+            <div class="auth-alert">Un nouvel email de confirmation a été envoyé.</div>
+        {% endif %}
+
+        <p style="margin-bottom: 10px;">
+            Un email de confirmation a été envoyé à :
+        </p>
+
+        <p style="font-weight: 700; margin-bottom: 18px;">
+            {{ email }}
+        </p>
+
+        <p style="margin-bottom: 18px;">
+            Vous devez confirmer votre adresse email avant de pouvoir vous connecter.
+            Pensez aussi à vérifier vos courriers indésirables.
+        </p>
+
+        <form method="post" action="{% url 'accounts:resend_verification' %}">
+            {% csrf_token %}
+            <input type="hidden" name="username" value="{{ username }}">
+            <button type="submit" class="auth-btn">Renvoyer l'email</button>
+        </form>
+
+        <p class="auth-link" style="margin-top: 18px;">
+            <a href="{% url 'accounts:login' %}">Retour à la connexion</a>
+        </p>
+    </div>
+</body>
+</html>

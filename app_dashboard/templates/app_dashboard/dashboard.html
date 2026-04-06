@@ -1,0 +1,18 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+</head>
+<body class="auth-body">
+    <div class="auth-card">
+        <h1>Bienvenue sur CVEye</h1>
+        <p>Vous êtes connecté.</p>
+        <p class="auth-link"><a href="{% url 'scans' %}">Aller à la page Scans</a></p>
+        <p class="auth-link"><a href="{% url 'accounts:logout' %}">Se déconnecter</a></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+</head>
+<body class="auth-body">
+    <div class="auth-card">
+        <h1>Connexion</h1>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="auth-alert">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.non_field_errors %}
+            <div class="auth-alert">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+
+            <div class="auth-field">
+                <label for="{{ form.username.id_for_label }}">Nom d'utilisateur</label>
+                {{ form.username }}
+                {% for error in form.username.errors %}
+                    <small class="field-error">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <div class="auth-field">
+                <label for="{{ form.password.id_for_label }}">Mot de passe</label>
+                {{ form.password }}
+                {% for error in form.password.errors %}
+                    <small class="field-error">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="auth-btn">Se connecter</button>
+        </form>
+
+        {% if show_resend_link and prefill_username %}
+        <form method="post" action="{% url 'accounts:resend_verification' %}" style="margin-top: 14px;">
+            {% csrf_token %}
+            <input type="hidden" name="username" value="{{ prefill_username }}">
+            <button type="submit" class="auth-btn" style="background: transparent; color: #7c3aed; border: 1px solid #7c3aed;">
+                Renvoyer le mail de confirmation
+            </button>
+        </form>
+        {% endif %}
+
+        <p class="auth-link">
+            Nouveau ? <a href="{% url 'accounts:register' %}">Créer un compte</a>
+        </p>
+    </div>
+</body>
+</html>

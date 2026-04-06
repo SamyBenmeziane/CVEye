@@ -1,0 +1,244 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Targets - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/scans_page.css' %}">
+</head>
+<body>
+<div class="app-layout sidebar-open" id="appLayout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+            <div class="brand">
+                <div class="brand-logo">[]</div>
+                <div class="brand-text">
+                    <div class="brand-title">CVEye</div>
+                    <div class="brand-subtitle">Security Platform</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{% url 'dashboard' %}" class="nav-link">
+                <span class="nav-label">Tableau de bord</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link active">
+                <span class="nav-label">Targets</span>
+            </a>
+            <a href="{% url 'scans' %}" class="nav-link">
+                <span class="nav-label">Scans</span>
+            </a>
+            <a href="#" class="nav-link">
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            <a href="#" class="nav-link">
+                <span class="nav-label">Alertes</span>
+            </a>
+            <a href="#" class="nav-link">
+                <span class="nav-label">Rapports</span>
+            </a>
+            <a href="#" class="nav-link">
+                <span class="nav-label">Réglages</span>
+            </a>
+            <a href="{% url 'accounts:logout' %}" class="nav-link">
+                <span class="nav-label">Déconnexion</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-avatar">
+                {{ request.user.username|slice:":1"|upper }}
+            </div>
+            <div class="sidebar-user-text">
+                <div class="user-name">{{ request.user.username }}</div>
+                <div class="user-email">{{ request.user.email }}</div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Ouvrir ou fermer la barre laterale">
+                    ==
+                </button>
+
+                <div class="topbar-search">
+                    <form method="get">
+                        <input type="text" name="q" value="{{ search }}" placeholder="Search targets by address or description...">
+                    </form>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <div class="system-pill">All Systems Operational</div>
+
+                <button type="button" class="topbar-icon" aria-label="Notifications" title="Notifications">
+                    🔔
+                </button>
+
+                <div class="topbar-user" title="{{ request.user.username }}">
+                    {{ request.user.username|slice:":1"|upper }}
+                </div>
+            </div>
+        </header>
+
+        <section class="page-content">
+            <div class="page-header">
+                <div>
+                    <h1>Targets</h1>
+                    <p>
+                        {% if targets %}
+                            {{ targets|length }} cible{{ targets|length|pluralize }} enregistrée{{ targets|length|pluralize }}
+                        {% else %}
+                            Aucune cible enregistrée pour le moment
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'error' %}error{% else %}success{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="table-card" style="margin-bottom: 20px;">
+                <h3 style="margin-bottom: 16px;">Ajouter une cible</h3>
+
+                <form method="post" style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+                    {% csrf_token %}
+
+                    <div>
+                        <label for="{{ form.adresse.id_for_label }}">Adresse</label>
+                        {{ form.adresse }}
+                        {% for error in form.adresse.errors %}
+                            <small class="field-error">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.type_cible.id_for_label }}">Type</label>
+                        {{ form.type_cible }}
+                        {% for error in form.type_cible.errors %}
+                            <small class="field-error">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+
+                    <div style="grid-column: 1 / -1;">
+                        <label for="{{ form.description.id_for_label }}">Description</label>
+                        {{ form.description }}
+                        {% for error in form.description.errors %}
+                            <small class="field-error">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        {{ form.active }}
+                        <label for="{{ form.active.id_for_label }}">Cible active</label>
+                    </div>
+
+                    <div style="grid-column: 1 / -1;">
+                        <button type="submit" class="primary-btn">Ajouter la cible</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-card">
+                <table class="scan-table">
+                    <thead>
+                    <tr>
+                        <th>TARGET</th>
+                        <th>TYPE</th>
+                        <th>STATUT</th>
+                        <th>DERNIER SCAN</th>
+                        <th>NIVEAU DE RISQUE</th>
+                        <th>DÉTAILS</th>
+                        <th class="th-right">ACTIONS</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% if targets %}
+                        {% for target in targets %}
+                            <tr>
+                                <td>
+                                    <div class="target-cell">
+                                        <div class="target-icon">[]</div>
+                                        <div>
+                                            <div class="target-name">{{ target.adresse }}</div>
+                                            <div class="target-sub">{{ target.description|default:"Aucune description" }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>{{ target.type_cible|title }}</td>
+
+                                <td>
+                                    {% if target.display_status == "Online" %}
+                                        <span class="status-badge completed">Online</span>
+                                    {% elif target.display_status == "Warning" %}
+                                        <span class="status-badge neutral">Warning</span>
+                                    {% else %}
+                                        <span class="status-badge failed">Offline</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if target.last_scan_date %}
+                                        <div class="cell-main">{{ target.last_scan_date|date:"Y-m-d H:i:s" }}</div>
+                                    {% else %}
+                                        <div class="cell-main">Jamais</div>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if target.risk_label == "Critique" or target.risk_label == "Élevé" %}
+                                        <span class="result-red">{{ target.risk_label }}</span>
+                                    {% else %}
+                                        <span class="result-blue">{{ target.risk_label }}</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <div class="result-line">
+                                        Services:
+                                        <span class="result-blue">{{ target.service_count }}</span>
+                                    </div>
+                                    <div class="result-line">
+                                        Vulnerabilities:
+                                        <span class="result-red">{{ target.vulnerability_count }}</span>
+                                    </div>
+                                </td>
+
+                                <td class="th-right">
+                                    <div style="display:flex; gap:8px; justify-content:flex-end;">
+    <form method="post" action="{% url 'launch_target_scan' target.id %}">
+        {% csrf_token %}
+        <button type="submit" class="details-btn">Lancer scan</button>
+    </form>
+    <a href="{% url 'scans' %}?target={{ target.id }}" class="details-btn">Voir scans</a>
+</div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="empty-row">
+                                Aucune cible enregistrée.
+                            </td>
+                        </tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script src="{% static 'app_dashboard/js/scans_page.js' %}"></script>
+</body>
+</html>
