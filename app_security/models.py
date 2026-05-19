@@ -24,4 +24,5 @@ class Vulnerability(models.Model):
         unique_together = ("service", "cve_id")
 
     def __str__(self):
+        """Retourne l'identifiant CVE suivi du service affecté."""
         return f"{self.cve_id} on {self.service}"

@@ -1,0 +1,989 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
+    <title>Détail du Serveur - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/scans_page.css' %}">
+    <style>
+        .target-detail-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .scan-summary-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+
+        .target-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem 1.5rem;
+            margin-top: 0.75rem;
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .target-meta span {
+            color: #0f172a;
+        }
+
+        .history-link {
+            text-decoration: none;
+        }
+
+        .history-link.details-btn-active {
+            background: rgba(59, 130, 246, 0.24);
+            border-color: rgba(96, 165, 250, 0.6);
+        }
+
+        .report-tools {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .report-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.56);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 1200;
+        }
+
+        .report-modal-backdrop.is-open {
+            display: flex;
+        }
+
+        .report-modal {
+            width: min(680px, 100%);
+            background: #ffffff;
+            border-radius: 24px;
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+            padding: 1.5rem;
+            color: #0f172a;
+        }
+
+        .report-modal-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .report-modal-close {
+            border: none;
+            background: transparent;
+            font-size: 1.8rem;
+            line-height: 1;
+            cursor: pointer;
+            color: #475569;
+        }
+
+        .report-option-list {
+            display: grid;
+            gap: 0.9rem;
+            margin: 1rem 0 1.25rem;
+        }
+
+        .report-option {
+            display: grid;
+            gap: 0.45rem;
+            padding: 1rem 1.1rem;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 16px;
+            background: #f8fafc;
+        }
+
+        .report-option-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+        }
+
+        .report-option p {
+            margin: 0;
+            color: #64748b;
+        }
+
+        .report-count-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.35rem;
+        }
+
+        .report-count-input {
+            width: 92px;
+            min-height: 42px;
+            padding: 0 0.75rem;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            background: #ffffff;
+            color: inherit;
+        }
+
+        .report-summary {
+            display: grid;
+            gap: 0.5rem;
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .report-empty {
+            margin: 1rem 0;
+            color: #64748b;
+        }
+
+        .scan-accordion-trigger { cursor: pointer; }
+        .scan-accordion-trigger::after {
+            content: "▾";
+            font-size: 0.9rem;
+            color: var(--muted);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+        .scan-accordion-item.is-open .scan-accordion-trigger::after { transform: rotate(180deg); }
+
+        /* ── Scan history accordion ─────────────────────────── */
+        .scan-history-accordion { display: grid; gap: 10px; }
+
+        .scan-history-item {
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--surface-strong);
+            overflow: hidden;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        .scan-history-item.is-open {
+            border-color: rgba(78,167,255,0.3);
+            box-shadow: 0 0 0 3px rgba(78,167,255,0.06), var(--shadow-md);
+        }
+
+        .scan-history-trigger {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            border: none;
+            background: transparent;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .scan-history-trigger:hover { background: rgba(23,41,31,0.03); transform: translateY(-1px); box-shadow: inset 0 0 0 1px rgba(78,167,255,0.08); }
+        .scan-history-trigger:active { background: rgba(78,167,255,0.07); transform: translateY(0); }
+        .scan-history-item.is-open .scan-history-trigger { background: rgba(78,167,255,0.04); }
+
+        .scan-history-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+        .scan-history-badge {
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent-dark);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+        }
+        .scan-history-date { font-weight: 700; }
+        .scan-history-time { color: var(--muted); font-size: 0.9rem; }
+
+        .scan-history-stats {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+        .scan-history-stat { display: flex; align-items: center; gap: 4px; font-weight: 600; }
+        .scan-history-stat-label { color: var(--muted); font-size: 0.85rem; }
+        .scan-history-duration { color: var(--muted); font-size: 0.88rem; }
+
+        .scan-history-caret {
+            font-size: 1rem;
+            color: var(--muted);
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+        .scan-history-item.is-open .scan-history-caret { transform: rotate(180deg); }
+
+        .scan-history-body { border-top: 1px solid rgba(18,32,25,0.06); }
+        .scan-history-content { padding: 18px 20px 20px; }
+        .scan-history-details { margin-top: 14px; }
+        .selected-scan-card {
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--surface-strong);
+            overflow: hidden;
+        }
+        .selected-scan-card.is-open {
+            border-color: rgba(78,167,255,0.3);
+            box-shadow: 0 0 0 3px rgba(78,167,255,0.06), var(--shadow-md);
+        }
+        .selected-scan-trigger {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px 20px;
+            border: none;
+            background: transparent;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .selected-scan-trigger:hover { background: rgba(23,41,31,0.03); transform: translateY(-1px); box-shadow: inset 0 0 0 1px rgba(78,167,255,0.08); }
+        .selected-scan-trigger:active { transform: translateY(0); background: rgba(78,167,255,0.07); }
+        .selected-scan-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            min-width: 0;
+            flex: 1;
+        }
+        .selected-scan-stats {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .selected-scan-body {
+            border-top: 1px solid rgba(18,32,25,0.06);
+            padding: 20px;
+        }
+        .selected-scan-caret {
+            font-size: 1rem;
+            color: var(--muted);
+            transition: transform 0.2s ease;
+        }
+        .selected-scan-card.is-open .selected-scan-caret { transform: rotate(180deg); }
+
+        .scan-row-loading {
+            padding: 32px;
+            text-align: center;
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        @keyframes scanRowReveal {
+            from { opacity: 0; transform: translateY(-5px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .scan-history-item.is-open .scan-history-body { animation: scanRowReveal 0.22s ease; }
+    </style>
+    <script>try{if(localStorage.getItem("cveye.theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
+</head>
+<body>
+<div class="app-layout sidebar-open" id="appLayout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+            <div class="sidebar-brand-row">
+            <a href="{% url 'dashboard' %}" class="brand">
+                <div class="brand-logo">
+                    <img src="{% static 'app_dashboard/img/logo_cveye.png' %}" alt="Logo CVEye" class="brand-logo-image">
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title">CVEye</div>
+                    <div class="brand-subtitle">Surveillance de la sécurité</div>
+                </div>
+            </a>
+                <button type="button" class="sidebar-toggle sidebar-toggle-nav" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Navigation principale">
+            {% if request.user.is_superuser %}
+            <a href="{% url 'admin_console' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
+                <span class="nav-label">Administration</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link active">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
+            </a>
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <span class="nav-label">Recherche de vulnérabilités</span>
+            </a>
+            {% else %}
+            <a href="{% url 'dashboard' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
+                <span class="nav-label">Tableau de bord</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link active">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
+            </a>
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <span class="nav-label">Recherche de vulnérabilités</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer profile-menu-container">
+            <div class="user-avatar">
+                {{ request.user.username|slice:":1"|upper }}
+            </div>
+            <button type="button" class="sidebar-user-button" id="profileMenuToggle" aria-expanded="false">
+                <div class="sidebar-user-text">
+                    <div class="user-name">{{ request.user.username }}</div>
+                    <div class="user-email">{{ request.user.email|default:"Compte connecté" }}</div>
+                </div>
+                <span class="profile-menu-caret">+</span>
+            </button>
+            <div class="profile-menu" id="profileMenu">
+                <a href="{% url 'accounts:settings' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" /><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.2 1.2a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.8a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.7-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0L4.3 18a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H3.5a1 1 0 0 1-1-1v-1.8a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.7 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h1.8a1 1 0 0 1 1 1v.2a1 1 0 0 0 .7.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.2 1.2a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v1.8a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.7Z" /></svg></span><span>Réglages</span></a>
+                <a href="{% url 'accounts:logout' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg"><path d="M10 17l5-5-5-5" /><path d="M15 12H4" /><path d="M20 4v16" /></svg></span><span>Déconnexion</span></a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button type="button" class="sidebar-toggle sidebar-toggle-mobile" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <div class="page-intro">
+                    <p class="eyebrow">Détail du serveur</p>
+                    <h1>{{ target.adresse }}</h1>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <a href="{% url 'targets' %}" class="details-btn">Retour aux serveurs</a>
+            </div>
+        </header>
+
+        <section class="page-content">
+            {% if messages %}
+                <div class="toast-stack">
+                    {% for message in messages %}
+                        <div class="alert toast {% if message.tags == 'error' %}error{% elif message.tags == 'succèss' %}succèss{% else %}warning{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <div class="toast-stack toast-stack-live" id="liveScanToastStack" aria-live="polite" aria-atomic="false"></div>
+
+            <div class="target-detail-grid">
+                <article class="panel-card">
+                    <div class="section-head section-head-spaced">
+                        <div>
+                            <p class="eyebrow">Machine</p>
+                            <h2>Dernier scan et accès à l'historique</h2>
+                            <div class="target-meta">
+                                <span>Type: {{ target.type_cible|title }}</span>
+                                <span>Description: {{ target.description|default:"Aucune description" }}</span>
+                                <span>Surveillance: {% if target.surveillance_active %}Active{% else %}Inactive{% endif %}</span>
+                            </div>
+                        </div>
+
+                        <div class="action-row">
+                            <form method="post" action="{% url 'launch_target_scan_async' target.id %}" class="launch-scan-form">
+                                {% csrf_token %}
+                                <button type="submit" class="primary-btn launch-scan-btn">Lancer un scan</button>
+                            </form>
+                            <a href="{% url 'edit_target' target.id %}" class="details-btn">Modifier</a>
+                        </div>
+                    </div>
+
+                    <div class="report-tools">
+                        <button type="button"
+                            class="details-btn open-report-modal-btn"
+                            data-report-target="{{ target.adresse }}"
+                            data-report-count="{{ scan_count }}"
+                            data-report-action="{% url 'download_target_report_pdf' target.id %}">
+                            Télécharger un rapport PDF
+                        </button>
+                    </div>
+                </article>
+
+                <article class="panel-card">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Dernier scan</p>
+                            <h2>Résumé rapide</h2>
+                        </div>
+                        {% if latest_scan and selected_scan and latest_scan.id != selected_scan.id %}
+                            <a href="{% url 'target_detail' target.id %}" class="details-btn">Voir le dernier scan</a>
+                        {% endif %}
+                    </div>
+
+                    <div class="scan-summary-grid">
+                        <div class="stat-box">
+                            <div class="stat-label">Statut</div>
+                            <div>
+                                {% if latest_scan %}
+                                    {% if latest_scan.statut == "complete" %}
+                                        <div class="status-badge completed">Complété</div>
+                                    {% elif latest_scan.statut == "echoue" %}
+                                        <div class="status-badge failed">Échoué</div>
+                                    {% else %}
+                                        <div class="status-badge neutral">{{ latest_scan.statut }}</div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="status-badge neutral">Aucun scan</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Date</div>
+                            <div class="stat-value">{% if latest_scan %}{{ latest_scan.date_debut|date:"Y-m-d H:i:s" }}{% else %}N/A{% endif %}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Services</div>
+                            <div class="stat-value blue">{% if latest_scan %}{{ latest_service_count }}{% else %}0{% endif %}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Vulnérabilités</div>
+                            <div class="stat-value red">{% if latest_scan %}{{ latest_vulnerability_count }}{% else %}0{% endif %}</div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="panel-card">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Scan selectionne</p>
+                            <h2>
+                                {% if selected_scan %}
+                                    Details du scan du {{ selected_scan.date_debut|date:"Y-m-d H:i:s" }}
+                                {% else %}
+                                    Aucun scan disponible
+                                {% endif %}
+                            </h2>
+                        </div>
+                    </div>
+
+                    <div class="selected-scan-card is-open" id="selectedScanCard">
+                        <button type="button" class="selected-scan-trigger" id="selectedScanTrigger" aria-expanded="true">
+                            <span class="selected-scan-main">
+                                {% if selected_scan %}
+                                    <span class="scan-history-badge">Scan ouvert</span>
+                                    <span class="scan-history-date">{{ selected_scan.date_debut|date:"Y-m-d H:i:s" }}</span>
+                                {% else %}
+                                    <span class="scan-history-date">Aucun scan disponible</span>
+                                {% endif %}
+                            </span>
+                            <span class="selected-scan-stats">
+                                <span>
+                                    {% if selected_scan %}
+                                        {% if selected_scan.statut == "complete" %}
+                                            <span class="status-badge completed">Complété</span>
+                                        {% elif selected_scan.statut == "echoue" %}
+                                            <span class="status-badge failed">Échoué</span>
+                                        {% else %}
+                                            <span class="status-badge neutral">{{ selected_scan.statut }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="status-badge neutral">Aucun scan</span>
+                                    {% endif %}
+                                </span>
+                                <span class="scan-history-stat"><span class="scan-history-stat-label">Ports</span><span class="result-blue">{% if selected_scan %}{{ selected_scan.ports_ouverts }}{% else %}0{% endif %}</span></span>
+                                <span class="scan-history-stat"><span class="scan-history-stat-label">CVE</span><span class="result-red">{% if selected_scan %}{{ selected_scan.vulnerability_count }}{% else %}0{% endif %}</span></span>
+                                <span class="scan-history-stat"><span class="scan-history-stat-label">Durée</span><span>{% if selected_scan and selected_scan.duration_seconds is not None %}{{ selected_scan.duration_seconds }} s{% else %}N/A{% endif %}</span></span>
+                                <span class="selected-scan-caret">▾</span>
+                            </span>
+                        </button>
+
+                        <div class="selected-scan-body" id="selectedScanBody">
+                    {% if selected_scan_details %}
+                        <div class="scan-severity-toolbar" id="scanSeverityToolbar">
+                            <div class="severity-chip-row" id="scanSeveritySummary">
+                                <button type="button" class="severity-chip severity-critique{% if not selected_severity_totals.Critique %} severity-chip-zero{% endif %}" data-severity-filter="Critique">Critique {{ selected_severity_totals.Critique }}</button>
+                                <button type="button" class="severity-chip severity-elevee{% if not selected_severity_totals.Élevée %} severity-chip-zero{% endif %}" data-severity-filter="Élevée">Élevée {{ selected_severity_totals.Élevée }}</button>
+                                <button type="button" class="severity-chip severity-moyenne{% if not selected_severity_totals.Moyenne %} severity-chip-zero{% endif %}" data-severity-filter="Moyenne">Moyenne {{ selected_severity_totals.Moyenne }}</button>
+                                <button type="button" class="severity-chip severity-faible{% if not selected_severity_totals.Faible %} severity-chip-zero{% endif %}" data-severity-filter="Faible">Faible {{ selected_severity_totals.Faible }}</button>
+                            </div>
+                            <div class="severity-nav" id="scanSeverityNav" hidden>
+                                <button type="button" class="details-btn" id="severityPrevBtn">Précédent</button>
+                                <span class="table-note" id="severityNavLabel">1 / 1</span>
+                                <button type="button" class="details-btn" id="severityNextBtn">Suivant</button>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="section-head">
+                            <div>
+                                <p class="eyebrow">Ports et services</p>
+                                <h2>Résultats techniques</h2>
+                            </div>
+                        </div>
+
+                        <div class="scan-accordion-list" id="scanDetailsTableBody">
+                            {% if selected_scan_details %}
+                                {% for r in selected_scan_details %}
+                                    <article class="scan-accordion-item" data-severities="{{ r.severities_str }}" data-matches-severity="true" data-dominant="{{ r.dominant_severity }}">
+                                        <div class="scan-accordion-head">
+                                            <button type="button" class="scan-accordion-trigger" aria-expanded="false">
+                                                <span class="scan-accordion-main">
+                                                    <span class="scan-accordion-port">{{ r.port }}/{{ r.protocol }}</span>
+                                                    <span class="scan-accordion-service">{{ r.service|default:"unknown"|title }}</span>
+                                                    <span class="scan-accordion-version">{{ r.display_version }}</span>
+                                                </span>
+                                                <span class="scan-accordion-summary">
+                                                    <span class="scan-accordion-total">{{ r.total_vulnerabilities }} CVE</span>
+                                                    <span class="severity-chip severity-critique{% if not r.severity_counts.Critique %} severity-chip-zero{% endif %}" data-item-severity="Critique">Critique {{ r.severity_counts.Critique|default:0 }}</span>
+                                                    <span class="severity-chip severity-elevee{% if not r.severity_counts.Élevée %} severity-chip-zero{% endif %}" data-item-severity="Élevée">Élevée {{ r.severity_counts.Élevée|default:0 }}</span>
+                                                    <span class="severity-chip severity-moyenne{% if not r.severity_counts.Moyenne %} severity-chip-zero{% endif %}" data-item-severity="Moyenne">Moyenne {{ r.severity_counts.Moyenne|default:0 }}</span>
+                                                    <span class="severity-chip severity-faible{% if not r.severity_counts.Faible %} severity-chip-zero{% endif %}" data-item-severity="Faible">Faible {{ r.severity_counts.Faible|default:0 }}</span>
+                                                </span>
+                                            </button>
+                                            <form method="post" action="{% url 'launch_target_port_scan_async' target.id r.port %}" class="launch-scan-form port-rescan-form" data-scan-label="Revérification du port {{ r.port }} sur {{ target.adresse }}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="port-rescan-btn" title="Revérifier ce port" aria-label="Revérifier le port {{ r.port }}">↻</button>
+                                            </form>
+                                        </div>
+                                        <div class="scan-accordion-body" hidden>
+                                            <div class="scan-accordion-meta">
+                                                <div class="scan-meta-badge">
+                                                    <span class="scan-meta-label">Service</span>
+                                                    <span class="scan-meta-val">{{ r.service|default:"unknown"|title }}</span>
+                                                </div>
+                                                {% if r.product %}
+                                                <div class="scan-meta-badge">
+                                                    <span class="scan-meta-label">Produit</span>
+                                                    <span class="scan-meta-val">{{ r.product }}</span>
+                                                </div>
+                                                {% endif %}
+                                                <div class="scan-meta-badge">
+                                                    <span class="scan-meta-label">Version</span>
+                                                    <span class="scan-meta-val">{{ r.display_version }}</span>
+                                                </div>
+                                                <div class="scan-meta-badge">
+                                                    <span class="scan-meta-label">Statut</span>
+                                                    <span class="scan-meta-val scan-meta-open">Ouvert</span>
+                                                </div>
+                                            </div>
+                                            <div class="scan-accordion-columns">
+                                                <div class="scan-accordion-panel">
+                                                    <p class="eyebrow">Vulnérabilités</p>
+                                                    {% if r.vulnerabilities %}
+                                                        <div class="scan-detail-list">
+                                                            {% for vuln in r.vulnerabilities_visible %}
+                                                                <div>{{ vuln.cve_id }}{% if vuln.severity %} — {{ vuln.severity }}{% endif %}</div>
+                                                            {% endfor %}
+                                                            {% for vuln in r.vulnerabilities_hidden %}
+                                                                <div class="detail-extra" hidden>{{ vuln.cve_id }}{% if vuln.severity %} — {{ vuln.severity }}{% endif %}</div>
+                                                            {% endfor %}
+                                                            {% if r.vulnerabilities_hidden %}
+                                                                <button type="button" class="scan-detail-show-more">Voir plus ({{ r.vulnerabilities_hidden|length }})</button>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="scan-detail-list"><div>Aucune vulnérabilité</div></div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="scan-accordion-panel">
+                                                    <p class="eyebrow">Données techniques</p>
+                                                    {% if r.banner %}
+                                                        <div class="scan-detail-item">
+                                                            <span class="autres-label">Bannière</span>
+                                                            <div class="scan-detail-list">
+                                                                {{ r.banner_short }}{% if r.banner_rest %}<span class="detail-extra" hidden>{{ r.banner_rest }}</span><button type="button" class="scan-detail-show-more">Voir plus</button>{% endif %}
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                    {% if r.headers_visible %}
+                                                        <div class="scan-detail-item">
+                                                            <span class="autres-label">En-têtes</span>
+                                                            <div class="scan-detail-list">
+                                                                {% for k, v in r.headers_visible %}
+                                                                    <div>{{ k }} : {{ v }}</div>
+                                                                {% endfor %}
+                                                                {% for k, v in r.headers_hidden %}
+                                                                    <div class="detail-extra" hidden>{{ k }} : {{ v }}</div>
+                                                                {% endfor %}
+                                                                {% if r.headers_hidden %}
+                                                                    <button type="button" class="scan-detail-show-more">Voir plus ({{ r.headers_hidden|length }})</button>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                    {% if not r.banner and not r.headers_visible %}
+                                                        <div class="scan-detail-list"><div>Aucune donnée supplémentaire</div></div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </article>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-row">Aucun port ouvert à afficher.</div>
+                            {% endif %}
+                        </div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="panel-card">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Historique</p>
+                            <h2>Anciens scans</h2>
+                        </div>
+                    </div>
+
+                    <div class="scan-history-accordion" id="scanHistoryAccordion">
+                        {% if latest_scan %}
+                            <article class="scan-history-item" data-history-scan-id="{{ latest_scan.id }}" {% if latest_scan.statut == "en_cours" or latest_scan.statut == "en_attente" %}data-scan-row-id="{{ latest_scan.id }}" data-scan-active="true"{% endif %}>
+                                <button type="button" class="scan-history-trigger" aria-expanded="false" data-details-url="{% url 'scan_details' latest_scan.id %}">
+                                    <span class="scan-history-main">
+                                        <span class="scan-history-badge">Dernier scan</span>
+                                        <span class="scan-history-date">{{ latest_scan.date_debut|date:"Y-m-d H:i:s" }}</span>
+                                    </span>
+                                    <span class="scan-history-stats">
+                                        {% if latest_scan.statut == "complete" %}
+                                            <span class="status-badge completed" data-scan-status="{{ latest_scan.id }}">Complété</span>
+                                        {% elif latest_scan.statut == "echoue" %}
+                                            <span class="status-badge failed" data-scan-status="{{ latest_scan.id }}">Échoué</span>
+                                        {% else %}
+                                            <span class="status-badge neutral" data-scan-status="{{ latest_scan.id }}">{{ latest_scan.statut }}</span>
+                                        {% endif %}
+                                        <span class="scan-history-stat"><span class="scan-history-stat-label">Durée</span><span data-scan-duration="{{ latest_scan.id }}">{% if latest_scan.duration_seconds is not None %}{{ latest_scan.duration_seconds }} s{% else %}N/A{% endif %}</span></span>
+                                        <span class="scan-history-stat"><span class="scan-history-stat-label">Ports</span><span class="result-blue" data-scan-open-ports="{{ latest_scan.id }}">{{ latest_scan.ports_ouverts }}</span></span>
+                                        <span class="scan-history-stat"><span class="scan-history-stat-label">CVE</span><span class="result-red">{{ latest_scan.vulnerability_count }}</span></span>
+                                        <span class="scan-history-caret">▾</span>
+                                    </span>
+                                </button>
+                                <div class="scan-history-body" hidden>
+                                    <div class="scan-history-content">
+                                        <div class="scan-history-details js-history-scan-details">
+                                            {% if selected_scan_id == latest_scan.id|stringformat:'s' and selected_scan_details %}
+                                                <div class="scan-accordion-list">
+                                                    {% for r in selected_scan_details %}
+                                                        <article class="scan-accordion-item" data-severities="{{ r.severities_str }}" data-matches-severity="true" data-dominant="{{ r.dominant_severity }}">
+                                                            <div class="scan-accordion-head">
+                                                                <button type="button" class="scan-accordion-trigger" aria-expanded="false">
+                                                                    <span class="scan-accordion-main">
+                                                                        <span class="scan-accordion-port">{{ r.port }}/{{ r.protocol }}</span>
+                                                                        <span class="scan-accordion-service">{{ r.service|default:"unknown"|title }}</span>
+                                                                        <span class="scan-accordion-version">{{ r.display_version }}</span>
+                                                                    </span>
+                                                                    <span class="scan-accordion-summary">
+                                                                        <span class="scan-accordion-total">{{ r.total_vulnerabilities }} CVE</span>
+                                                                        <span class="severity-chip severity-critique{% if not r.severity_counts.Critique %} severity-chip-zero{% endif %}">Critique {{ r.severity_counts.Critique|default:0 }}</span>
+                                                                        <span class="severity-chip severity-elevee{% if not r.severity_counts.Élevée %} severity-chip-zero{% endif %}">Élevée {{ r.severity_counts.Élevée|default:0 }}</span>
+                                                                        <span class="severity-chip severity-moyenne{% if not r.severity_counts.Moyenne %} severity-chip-zero{% endif %}">Moyenne {{ r.severity_counts.Moyenne|default:0 }}</span>
+                                                                        <span class="severity-chip severity-faible{% if not r.severity_counts.Faible %} severity-chip-zero{% endif %}">Faible {{ r.severity_counts.Faible|default:0 }}</span>
+                                                                    </span>
+                                                                </button>
+                                                                <form method="post" action="{% url 'launch_target_port_scan_async' target.id r.port %}" class="launch-scan-form port-rescan-form" data-scan-label="Revérification du port {{ r.port }} sur {{ target.adresse }}">
+                                                                    {% csrf_token %}
+                                                                    <button type="submit" class="port-rescan-btn" title="Revérifier ce port" aria-label="Revérifier le port {{ r.port }}">↻</button>
+                                                                </form>
+                                                            </div>
+                                                            <div class="scan-accordion-body" hidden>
+                                                                <div class="scan-accordion-meta">
+                                                                    <div class="scan-meta-badge">
+                                                                        <span class="scan-meta-label">Service</span>
+                                                                        <span class="scan-meta-val">{{ r.service|default:"unknown"|title }}</span>
+                                                                    </div>
+                                                                    {% if r.product %}
+                                                                    <div class="scan-meta-badge">
+                                                                        <span class="scan-meta-label">Produit</span>
+                                                                        <span class="scan-meta-val">{{ r.product }}</span>
+                                                                    </div>
+                                                                    {% endif %}
+                                                                    <div class="scan-meta-badge">
+                                                                        <span class="scan-meta-label">Version</span>
+                                                                        <span class="scan-meta-val">{{ r.display_version }}</span>
+                                                                    </div>
+                                                                    <div class="scan-meta-badge">
+                                                                        <span class="scan-meta-label">Statut</span>
+                                                                        <span class="scan-meta-val scan-meta-open">Ouvert</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="scan-accordion-columns">
+                                                                    <div class="scan-accordion-panel">
+                                                                        <p class="eyebrow">Vulnérabilités</p>
+                                                                        {% if r.vulnerabilities %}
+                                                                            <div class="scan-detail-list">
+                                                                                {% for vuln in r.vulnerabilities_visible %}
+                                                                                    <div>{{ vuln.cve_id }}{% if vuln.severity %} — {{ vuln.severity }}{% endif %}</div>
+                                                                                {% endfor %}
+                                                                                {% for vuln in r.vulnerabilities_hidden %}
+                                                                                    <div class="detail-extra" hidden>{{ vuln.cve_id }}{% if vuln.severity %} — {{ vuln.severity }}{% endif %}</div>
+                                                                                {% endfor %}
+                                                                                {% if r.vulnerabilities_hidden %}
+                                                                                    <button type="button" class="scan-detail-show-more">Voir plus ({{ r.vulnerabilities_hidden|length }})</button>
+                                                                                {% endif %}
+                                                                            </div>
+                                                                        {% else %}
+                                                                            <div class="scan-detail-list"><div>Aucune vulnérabilité</div></div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                    <div class="scan-accordion-panel">
+                                                                        <p class="eyebrow">Données techniques</p>
+                                                                        {% if r.banner %}
+                                                                            <div class="scan-detail-item">
+                                                                                <span class="autres-label">Bannière</span>
+                                                                                <div class="scan-detail-list">
+                                                                                    {{ r.banner_short }}{% if r.banner_rest %}<span class="detail-extra" hidden>{{ r.banner_rest }}</span><button type="button" class="scan-detail-show-more">Voir plus</button>{% endif %}
+                                                                                </div>
+                                                                            </div>
+                                                                        {% endif %}
+                                                                        {% if r.headers_visible %}
+                                                                            <div class="scan-detail-item">
+                                                                                <span class="autres-label">En-têtes</span>
+                                                                                <div class="scan-detail-list">
+                                                                                    {% for k, v in r.headers_visible %}
+                                                                                        <div>{{ k }} : {{ v }}</div>
+                                                                                    {% endfor %}
+                                                                                    {% for k, v in r.headers_hidden %}
+                                                                                        <div class="detail-extra" hidden>{{ k }} : {{ v }}</div>
+                                                                                    {% endfor %}
+                                                                                    {% if r.headers_hidden %}
+                                                                                        <button type="button" class="scan-detail-show-more">Voir plus ({{ r.headers_hidden|length }})</button>
+                                                                                    {% endif %}
+                                                                                </div>
+                                                                            </div>
+                                                                        {% endif %}
+                                                                        {% if not r.banner and not r.headers_visible %}
+                                                                            <div class="scan-detail-list"><div>Aucune donnée supplémentaire</div></div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </article>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <div class="scan-row-loading">Cliquez pour charger les détails de ce scan.</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        {% endif %}
+
+                        {% if scan_history %}
+                            {% for scan in scan_history %}
+                                <article class="scan-history-item" data-history-scan-id="{{ scan.id }}">
+                                    <button type="button" class="scan-history-trigger" aria-expanded="false" data-details-url="{% url 'scan_details' scan.id %}">
+                                        <span class="scan-history-main">
+                                            <span class="scan-history-date">{{ scan.date_debut|date:"Y-m-d H:i:s" }}</span>
+                                        </span>
+                                        <span class="scan-history-stats">
+                                            {% if scan.statut == "complete" %}
+                                                <span class="status-badge completed">Complété</span>
+                                            {% elif scan.statut == "echoue" %}
+                                                <span class="status-badge failed">Échoué</span>
+                                            {% else %}
+                                                <span class="status-badge neutral">{{ scan.statut }}</span>
+                                            {% endif %}
+                                            <span class="scan-history-stat"><span class="scan-history-stat-label">Durée</span><span>{% if scan.duration_seconds is not None %}{{ scan.duration_seconds }} s{% else %}N/A{% endif %}</span></span>
+                                            <span class="scan-history-stat"><span class="scan-history-stat-label">Ports</span><span class="result-blue">{{ scan.ports_ouverts }}</span></span>
+                                            <span class="scan-history-stat"><span class="scan-history-stat-label">CVE</span><span class="result-red">{{ scan.vulnerability_count }}</span></span>
+                                            <span class="scan-history-caret">▾</span>
+                                        </span>
+                                    </button>
+                                    <div class="scan-history-body" hidden>
+                                        <div class="scan-history-content">
+                                            <div class="scan-history-details js-history-scan-details">
+                                                <div class="scan-row-loading">Cliquez pour charger les détails de ce scan.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        {% elif not latest_scan %}
+                            <div class="empty-row">Aucun scan n'a encore été lancé pour ce serveur.</div>
+                        {% endif %}
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div class="report-modal-backdrop" id="reportModalBackdrop" aria-hidden="true">
+    <div class="report-modal" role="dialog" aria-modal="true" aria-labelledby="reportModalTitle">
+        <div class="report-modal-head">
+            <div>
+                <p class="eyebrow">Rapport PDF</p>
+                <h2 id="reportModalTitle">Choisir le contenu du rapport</h2>
+            </div>
+            <button type="button" class="report-modal-close" id="reportModalClose" aria-label="Fermer">&times;</button>
+        </div>
+
+        <div class="report-summary">
+            <span id="reportModalTarget"></span>
+            <span id="reportModalCount"></span>
+        </div>
+
+        <form method="post" id="reportModalForm" class="modern-form" data-skip-loading="true">
+            {% csrf_token %}
+            <div class="report-option-list">
+                <label class="report-option">
+                    <div class="report-option-header">
+                        <input type="radio" name="report_scope" value="latest" checked>
+                        <span>Dernier scan</span>
+                    </div>
+                    <p>Option par défaut. Génère un rapport à partir du scan le plus récent.</p>
+                </label>
+
+                <label class="report-option">
+                    <div class="report-option-header">
+                        <input type="radio" name="report_scope" value="all">
+                        <span>Tous les scans</span>
+                    </div>
+                    <p>Inclut tout l'historique disponible pour cette machine.</p>
+                </label>
+
+                <label class="report-option">
+                    <div class="report-option-header">
+                        <input type="radio" name="report_scope" value="count">
+                        <span>N scans</span>
+                    </div>
+                    <p>Permet de choisir un nombre précis de scans récents à inclure.</p>
+                    <div class="report-count-row">
+                        <label for="reportModalCountInput">Nombre de scans</label>
+                        <input id="reportModalCountInput" class="report-count-input" type="number" name="count" min="1" max="{{ scan_count|default:1 }}" value="{% if scan_count and scan_count < 3 %}{{ scan_count }}{% else %}3{% endif %}" disabled>
+                    </div>
+                </label>
+            </div>
+
+            <div class="report-empty" id="reportModalEmpty" {% if scan_count %}hidden{% endif %}>
+                Aucun scan disponible pour ce serveur.
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="primary-btn" id="reportModalSubmit" {% if not scan_count %}disabled{% endif %}>
+                    Télécharger le rapport
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{% static 'app_dashboard/js/scans_page.js' %}"></script>
+<script>
+    const reportModalBackdrop = document.getElementById('reportModalBackdrop');
+    const reportModalClose = document.getElementById('reportModalClose');
+    const reportModalForm = document.getElementById('reportModalForm');
+    const reportModalTarget = document.getElementById('reportModalTarget');
+    const reportModalCount = document.getElementById('reportModalCount');
+    const reportModalCountInput = document.getElementById('reportModalCountInput');
+    const reportModalSubmit = document.getElementById('reportModalSubmit');
+    const reportModalEmpty = document.getElementById('reportModalEmpty');
+    const reportScopeInputs = reportModalForm ? reportModalForm.querySelectorAll('input[name="report_scope"]') : [];
+
+    function syncReportCountState() {
+        if (!reportModalCountInput) {
+            return;
+        }
+
+        const selectedScope = reportModalForm.querySelector('input[name="report_scope"]:checked');
+        reportModalCountInput.disabled = !selectedScope || selectedScope.value !== 'count';
+    }
+
+    function closeReportModal() {
+        reportModalBackdrop.classList.remove('is-open');
+        reportModalBackdrop.setAttribute('aria-hidden', 'true');
+    }
+
+    document.querySelectorAll('.open-report-modal-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+            const targetLabel = button.dataset.reportTarget || 'Machine';
+            const scanCount = Number(button.dataset.reportCount || '0');
+            const formAction = button.dataset.reportAction || '';
+
+            reportModalForm.action = formAction;
+            reportModalTarget.textContent = `Machine : ${targetLabel}`;
+            reportModalCount.textContent = `Nombre total de scans disponibles : ${scanCount}`;
+            reportModalCountInput.max = String(Math.max(scanCount, 1));
+            reportModalCountInput.value = String(Math.min(Math.max(scanCount, 1), 3));
+            reportModalSubmit.disabled = scanCount === 0;
+            reportModalEmpty.hidden = scanCount !== 0;
+            reportScopeInputs.forEach((input) => {
+                input.checked = input.value === 'latest';
+            });
+            syncReportCountState();
+
+            reportModalBackdrop.classList.add('is-open');
+            reportModalBackdrop.setAttribute('aria-hidden', 'false');
+        });
+    });
+
+    reportScopeInputs.forEach((input) => {
+        input.addEventListener('change', syncReportCountState);
+    });
+
+    if (reportModalClose) {
+        reportModalClose.addEventListener('click', closeReportModal);
+    }
+
+    if (reportModalBackdrop) {
+        reportModalBackdrop.addEventListener('click', (event) => {
+            if (event.target === reportModalBackdrop) {
+                closeReportModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && reportModalBackdrop.classList.contains('is-open')) {
+            closeReportModal();
+        }
+    });
+</script>
+</body>
+</html>

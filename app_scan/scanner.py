@@ -3,27 +3,60 @@ import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
+from django.conf import settings
+
 
 class SocketScanner:
-    def __init__(self, addr_ip, max_threads=5000):
+    TOTAL_PORTS = 65535
+    DEFAULT_MAX_THREADS = getattr(settings, "SCAN_MAX_THREADS", 5000)
+
+    def __init__(self, addr_ip, max_threads=None, progress_callback=None, ports=None):
+        """Initialise le scanner avec l'adresse cible, le nombre de threads, un callback de progression
+        et la liste de ports à scanner (par défaut tous les ports de 1 à 65535)."""
         self.addr_ip = addr_ip
-        self.max_threads = max_threads
+        self.ports = self.normalize_ports(ports)
+        self.total_ports = len(self.ports)
+        configured_threads = self.DEFAULT_MAX_THREADS if max_threads is None else max_threads
+        self.max_threads = max(1, min(int(configured_threads), self.total_ports))
+        self.progress_callback = progress_callback
         self.resultat = {}
         self.lock = threading.Lock()
+        self.progress_lock = threading.Lock()
+        self.scanned_ports = 0
 
+        # Chaque sonde tente de reveiller un service pour recuperer une banniere utile
         self.probes = [
             {"nom": "HTTP", "req": b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"},
             {"nom": "NULL", "req": b"\r\n"},
+            # Pour le moment cette sonde ne sert pas vraiment mais elle reste la pour les essais
             {"nom": "BITTORRENT", "req": b"\x13BitTorrent protocol"},
         ]
 
+    def normalize_ports(self, ports):
+        """Convertit, déduplique et valide la liste de ports. Retourne tous les ports si la liste est vide."""
+        if not ports:
+            return list(range(1, self.TOTAL_PORTS + 1))
+
+        normalized = []
+        for port in ports:
+            try:
+                port_int = int(port)
+            except (TypeError, ValueError):
+                continue
+
+            if 1 <= port_int <= self.TOTAL_PORTS and port_int not in normalized:
+                normalized.append(port_int)
+
+        return normalized or list(range(1, self.TOTAL_PORTS + 1))
+
     def sanitize_text(self, value):
+        """Supprime les octets nuls d'une chaîne pour éviter les problèmes lors du stockage en base."""
         if value is None:
             return None
         return str(value).replace("\x00", "")
 
     def verif_port(self, port):
-        """Verification de l'ouverture des ports, identification et extraction."""
+        """Teste si un port TCP est ouvert et délègue l'identification du service si c'est le cas."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(0.8)
 
@@ -35,9 +68,21 @@ class SocketScanner:
             pass
         finally:
             sock.close()
+            self.increment_progress()
+
+    def increment_progress(self):
+        """Incrémente le compteur de ports scannés de façon thread-safe et appelle le callback de progression."""
+        if not self.progress_callback:
+            return
+
+        with self.progress_lock:
+            self.scanned_ports += 1
+            scanned_ports = self.scanned_ports
+
+        self.progress_callback(scanned_ports, self.total_ports)
 
     def identifier_service(self, port):
-        """Identifie le service expose sur un port ouvert."""
+        """Envoie des sondes successives sur le port ouvert pour obtenir une bannière d'identification."""
         banniere = ""
 
         for probe in self.probes:
@@ -63,7 +108,7 @@ class SocketScanner:
         self.process_data(port, banniere)
 
     def process_data(self, port, banniere):
-        """Extrait les informations detectees pour un service."""
+        """Analyse la bannière pour identifier le service (HTTP, SSH, FTP) et construit les champs CPE."""
         info = {
             "port": port,
             "service": "unknown",
@@ -79,7 +124,8 @@ class SocketScanner:
 
         if not banniere:
             try:
-                info["service"] = socket.getservbyport(port) if port < 1024 else "unknown"
+                # Si on na pas de banniere on tente au moins une estimation simple avec le port
+                info["service"] = socket.getservbyport(port) + " : GUESSED" if port < 1024 else "unknown"
             except OSError:
                 info["service"] = "unknown"
         else:
@@ -101,6 +147,7 @@ class SocketScanner:
             elif "SSH-" in banniere:
                 info["service"] = "ssh"
                 info["part"] = "a"
+                # Ici on fait un raccourci volontaire qui suffit pour les recherches de CVE
                 info["vendor"] = "openbsd" if "openssh" in banniere.lower() else "???"
                 info["produit"] = "OpenSSH" if "openssh" in banniere.lower() else "SSH-Server"
                 info["version"] = self.parse_version(banniere)
@@ -111,6 +158,7 @@ class SocketScanner:
                 info["part"] = "a"
                 info["version"] = self.parse_version(banniere)
 
+        # On force certains headers a exister pour eviter plein de tests plus loin dans lapp
         if info["service"] == "http":
             for header in ["keepalive", "acceptranges", "null", "server", "etag"]:
                 if header not in info["headers"]:
@@ -125,10 +173,12 @@ class SocketScanner:
             self.resultat[port] = info
 
     def parse_version(self, text):
+        """Extrait le premier numéro de version au format X.Y ou X.Y.Z trouvé dans le texte."""
         match = re.search(r"(\d+\.\d+(\.\d+)?)", text)
         return match.group(1) if match else "???"
 
     def normalize_product(self, produit):
+        """Normalise le nom du produit en minuscules avec underscores pour les champs CPE."""
         if not produit or produit == "???":
             return "???"
 
@@ -144,6 +194,7 @@ class SocketScanner:
         return produit_min.replace(" ", "_")
 
     def detect_vendor(self, produit):
+        """Déduit le nom de l'éditeur (vendor) à partir du nom du produit détecté."""
         if not produit or produit == "???":
             return "???"
 
@@ -157,11 +208,13 @@ class SocketScanner:
         return "???"
 
     def build_cpe_fields(self, info):
+        """Construit cpe_name (CPE complet) ou cpe_match_string (CPE avec wildcards) selon les données disponibles."""
         produit_normalise = self.normalize_product(info["produit"])
 
         if info["vendor"] == "???":
             info["vendor"] = self.detect_vendor(info["produit"])
 
+        # Si tout est connu on fait un CPE complet sinon on garde une version plus large
         if (
             info["part"] not in ["???", "unknown", "", None]
             and info["vendor"] not in ["???", "unknown", "", None]
@@ -182,6 +235,7 @@ class SocketScanner:
             )
 
     def run(self):
-        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            executor.map(self.verif_port, range(1, 65536))
+        """Lance le scan en parallèle sur tous les ports configurés et retourne les ports ouverts détectés."""
+        with ThreadPoolExecutor(max_workers=min(self.max_threads, self.total_ports)) as executor:
+            executor.map(self.verif_port, self.ports)
         return self.resultat

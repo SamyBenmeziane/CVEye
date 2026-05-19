@@ -1,0 +1,827 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
+    <title>Administration - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/scans_page.css' %}">
+    <style>
+        .admin-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .admin-inline-form {
+            margin: 0;
+        }
+
+        .admin-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            background: rgba(59, 130, 246, 0.12);
+            color: #1e4a8a;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .admin-chip.alert {
+            background: rgba(201, 77, 77, 0.12);
+            color: #7f1d1d;
+        }
+
+        .admin-chip.muted {
+            background: rgba(100, 116, 139, 0.14);
+            color: #475569;
+        }
+
+        .admin-filter-row {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .admin-filter-chip {
+            text-decoration: none;
+        }
+
+        .admin-loading-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.48);
+            backdrop-filter: blur(4px);
+            z-index: 4000;
+        }
+
+        .admin-loading-overlay.is-visible {
+            display: flex;
+        }
+
+        .admin-loading-card {
+            display: grid;
+            justify-items: center;
+            gap: 1rem;
+            min-width: 220px;
+            padding: 1.4rem 1.6rem;
+            border-radius: 24px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            background: rgba(15, 23, 42, 0.92);
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.38);
+            color: #f8fafc;
+        }
+
+        .admin-loading-spinner {
+            width: 46px;
+            height: 46px;
+            border-radius: 999px;
+            border: 4px solid rgba(255, 255, 255, 0.16);
+            border-top-color: #38bdf8;
+            animation: adminSpin 0.85s linear infinite;
+        }
+
+        .admin-loading-text {
+            margin: 0;
+            font-size: 0.98rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        @keyframes adminSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        .admin-accordion-list { display: grid; gap: 0.5rem; }
+
+        .admin-accordion-item {
+            border: 1px solid var(--border, rgba(148,163,184,0.14));
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .admin-accordion-trigger {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.85rem 1.1rem;
+            background: transparent;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
+        }
+
+        .admin-accordion-trigger:hover { background: rgba(148,163,184,0.07); }
+
+        .admin-accordion-main {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+
+        .admin-accordion-target {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .admin-accordion-meta {
+            font-size: 0.8rem;
+            opacity: 0.65;
+            white-space: nowrap;
+        }
+
+        .admin-accordion-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-caret {
+            font-size: 1rem;
+            opacity: 0.55;
+            transition: transform 0.2s;
+        }
+
+        .js-accordion-item.is-open .admin-caret { transform: rotate(180deg); }
+
+        .admin-accordion-body { padding: 0 0.75rem 0.75rem; }
+
+        .js-collapsible-panel > .js-panel-trigger {
+            cursor: pointer;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            transition: opacity 0.15s;
+        }
+        .js-collapsible-panel > .js-panel-trigger:hover { opacity: 0.8; }
+        .panel-caret {
+            font-size: 1rem;
+            opacity: 0.55;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+            margin-top: 0.35rem;
+        }
+        .js-collapsible-panel.is-open .panel-caret { transform: rotate(180deg); }
+
+        .admin-overview-card {
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            gap: 0.55rem;
+            min-height: 168px;
+        }
+
+        .admin-overview-card::after {
+            content: "";
+            position: absolute;
+            right: -22px;
+            top: -18px;
+            width: 88px;
+            height: 88px;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.22);
+            transform: rotate(18deg);
+            pointer-events: none;
+        }
+
+        .admin-overview-card .metric-meta {
+            max-width: 22ch;
+        }
+
+        .admin-overview-kicker {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            min-height: 28px;
+            padding: 0 0.7rem;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .admin-overview-foot {
+            margin-top: auto;
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: inherit;
+            opacity: 0.92;
+        }
+
+        .admin-overview-users {
+            background: linear-gradient(180deg, rgba(36, 147, 107, 0.16), rgba(255, 255, 255, 0.96));
+        }
+
+        .admin-overview-users .admin-overview-kicker {
+            background: rgba(255, 255, 255, 0.32);
+            color: #134e4a;
+        }
+
+        .admin-overview-pending {
+            background: linear-gradient(180deg, rgba(196, 123, 24, 0.18), rgba(255, 255, 255, 0.96));
+        }
+
+        .admin-overview-pending .admin-overview-kicker {
+            background: rgba(255, 255, 255, 0.34);
+            color: #8a4b08;
+        }
+
+        .admin-overview-scans {
+            background: linear-gradient(180deg, rgba(78, 167, 255, 0.16), rgba(255, 255, 255, 0.96));
+        }
+
+        .admin-overview-scans .admin-overview-kicker {
+            background: rgba(255, 255, 255, 0.32);
+            color: #1e4a8a;
+        }
+
+        .admin-overview-targets {
+            background: linear-gradient(180deg, rgba(201, 77, 77, 0.14), rgba(255, 255, 255, 0.96));
+        }
+
+        .admin-overview-targets .admin-overview-kicker {
+            background: rgba(255, 255, 255, 0.34);
+            color: #7f1d1d;
+        }
+    </style>
+    <script>try{if(localStorage.getItem("cveye.theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
+</head>
+<body>
+<div class="app-layout sidebar-open" id="appLayout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+            <div class="sidebar-brand-row">
+            <a href="{% url 'dashboard' %}" class="brand">
+                <div class="brand-logo">
+                    <img src="{% static 'app_dashboard/img/logo_cveye.png' %}" alt="Logo CVEye" class="brand-logo-image">
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title">CVEye</div>
+                    <div class="brand-subtitle">Monitoring security</div>
+                </div>
+            </a>
+                <button type="button" class="sidebar-toggle sidebar-toggle-nav" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Navigation principale">
+            <a href="{% url 'admin_console' %}" class="nav-link active">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
+                <span class="nav-label">Administration</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
+            </a>
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <span class="nav-label">Recherche de vulnérabilités</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer profile-menu-container">
+            <div class="user-avatar">
+                {{ request.user.username|slice:":1"|upper }}
+            </div>
+            <button type="button" class="sidebar-user-button" id="profileMenuToggle" aria-expanded="false">
+                <div class="sidebar-user-text">
+                    <div class="user-name">{{ request.user.username }}</div>
+                    <div class="user-email">{{ request.user.email|default:"Compte connecté" }}</div>
+                </div>
+                <span class="profile-menu-caret">+</span>
+            </button>
+            <div class="profile-menu" id="profileMenu">
+                <a href="{% url 'accounts:settings' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" /><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.2 1.2a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.8a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.7-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0L4.3 18a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H3.5a1 1 0 0 1-1-1v-1.8a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.7 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h1.8a1 1 0 0 1 1 1v.2a1 1 0 0 0 .7.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.2 1.2a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v1.8a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.7Z" /></svg></span><span>Réglages</span></a>
+                <a href="{% url 'accounts:logout' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg"><path d="M10 17l5-5-5-5" /><path d="M15 12H4" /><path d="M20 4v16" /></svg></span><span>Déconnexion</span></a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button type="button" class="sidebar-toggle sidebar-toggle-mobile" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="page-intro">
+                    <p class="eyebrow">Vue globale</p>
+                    <h1>Console d'administration</h1>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="system-pill">Super admin</div>
+            </div>
+        </header>
+
+        <section class="page-content admin-grid">
+            <section class="metrics-grid">
+                <a href="#section-users" class="metric-card metric-card-link metric-card-success admin-overview-card admin-overview-users">
+                    <span class="admin-overview-kicker">Comptes</span>
+                    <p class="metric-label">Utilisateurs</p>
+                    <h3>{{ total_users }}</h3>
+                    <p class="metric-meta">Comptes hors super admin</p>
+                    <span class="admin-overview-foot">Gérer les accès et l'activité</span>
+                </a>
+                <a href="#section-pending" class="metric-card metric-card-link metric-card-warning admin-overview-card admin-overview-pending">
+                    <span class="admin-overview-kicker">Validation</span>
+                    <p class="metric-label">En attente</p>
+                    <h3>{{ pending_approvals_count }}</h3>
+                    <p class="metric-meta">Comptes à valider</p>
+                    <span class="admin-overview-foot">Point d'attention prioritaire</span>
+                </a>
+                <a href="#section-scans" class="metric-card metric-card-link metric-card-primary admin-overview-card admin-overview-scans">
+                    <span class="admin-overview-kicker">Exécutions</span>
+                    <p class="metric-label">Scans globaux</p>
+                    <h3>{{ total_scans_global }}</h3>
+                    <p class="metric-meta">Toutes exécutions confondues</p>
+                    <span class="admin-overview-foot">Suivre l'intensité opérationnelle</span>
+                </a>
+                <a href="#section-targets" class="metric-card metric-card-link metric-card-danger admin-overview-card admin-overview-targets">
+                    <span class="admin-overview-kicker">Inventaire</span>
+                    <p class="metric-label">Serveurs globaux</p>
+                    <h3>{{ total_targets_global }}</h3>
+                    <p class="metric-meta">Inventaire total</p>
+                    <span class="admin-overview-foot">Accéder à la surface surveillée</span>
+                </a>
+            </section>
+
+            {% if messages %}
+                <div class="toast-stack">
+                    {% for message in messages %}
+                        <div class="alert toast {% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}success{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <article class="panel-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">Filtres</p>
+                        <h2>Filtrer la base</h2>
+                    </div>
+                </div>
+                <form method="get" class="modern-form compact-form">
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="admin-search">Nom, prénom, email ou username</label>
+                            <input id="admin-search" type="text" name="q" value="{{ search }}" placeholder="Ex: malek ou dupont">
+                        </div>
+                        <div class="form-field">
+                            <label for="owner-filter">Utilisateur cible</label>
+                            <select id="owner-filter" name="owner">
+                                <option value="">Tous les utilisateurs</option>
+                                {% for user_item in users %}
+                                    <option value="{{ user_item.id }}" {% if owner_filter == user_item.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ user_item.first_name }} {{ user_item.last_name }} ({{ user_item.username }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="status-filter">État du compte</label>
+                            <select id="status-filter" name="status">
+                                <option value="">Tous les états</option>
+                                <option value="active" {% if status_filter == "active" %}selected{% endif %}>Actifs</option>
+                                <option value="disabled" {% if status_filter == "disabled" %}selected{% endif %}>Désactivés</option>
+                                <option value="pending" {% if status_filter == "pending" %}selected{% endif %}>En attente admin</option>
+                                <option value="unverified" {% if status_filter == "unverified" %}selected{% endif %}>Email non vérifié</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn">Filtrer</button>
+                        <a href="{% url 'admin_console' %}" class="details-btn">Réinitialiser</a>
+                    </div>
+                </form>
+                <div class="admin-filter-row">
+                    <a href="{% url 'admin_console' %}?status=active" class="quick-filter-chip admin-filter-chip {% if status_filter == 'active' %}is-active{% endif %}">Actifs {{ active_users_count }}</a>
+                    <a href="{% url 'admin_console' %}?status=disabled" class="quick-filter-chip admin-filter-chip {% if status_filter == 'disabled' %}is-active{% endif %}">Désactivés {{ disabled_users_count }}</a>
+                    <a href="{% url 'admin_console' %}?status=pending" class="quick-filter-chip admin-filter-chip {% if status_filter == 'pending' %}is-active{% endif %}">En attente {{ pending_approvals_count }}</a>
+                    <a href="{% url 'admin_console' %}?status=unverified" class="quick-filter-chip admin-filter-chip {% if status_filter == 'unverified' %}is-active{% endif %}">Email non vérifié</a>
+                    <a href="{% url 'admin_console' %}" class="quick-filter-chip admin-filter-chip {% if not status_filter and not owner_filter and not search %}is-active{% endif %}">Tous</a>
+                </div>
+            </article>
+
+            <article class="panel-card js-collapsible-panel" id="section-pending">
+                <div class="section-head js-panel-trigger" role="button" tabindex="0" aria-expanded="false">
+                    <div>
+                        <p class="eyebrow">Validation</p>
+                        <h2>Comptes en attente</h2>
+                    </div>
+                    <span class="panel-caret">▾</span>
+                </div>
+                <div class="js-panel-body" hidden>
+                <div class="table-card">
+                    <table class="scan-table">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Email</th>
+                                <th>Etat</th>
+                                <th class="th-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if pending_users %}
+                                {% for pending_user in pending_users %}
+                                    <tr>
+                                        <td data-label="Utilisateur">
+                                            <div class="target-name">{{ pending_user.first_name }} {{ pending_user.last_name }}</div>
+                                            <div class="target-sub">{{ pending_user.username }}</div>
+                                        </td>
+                                        <td data-label="Email">{{ pending_user.email }}</td>
+                                        <td data-label="Etat">
+                                            <span class="admin-chip">Email vérifié</span>
+                                        </td>
+                                        <td data-label="Action" class="th-right">
+                                            <div class="admin-actions">
+                                                <form method="post" action="{% url 'approve_user' pending_user.id %}" class="admin-inline-form js-approve-user-form">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="primary-btn" data-loading-message="Validation de l'utilisateur en cours...">Valider</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="empty-row">Aucun compte en attente pour les filtres actuels.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+            </article>
+
+            <article class="panel-card js-collapsible-panel" id="section-users">
+                <div class="section-head js-panel-trigger" role="button" tabindex="0" aria-expanded="false">
+                    <div>
+                        <p class="eyebrow">Comptes</p>
+                        <h2>Utilisateurs et activités</h2>
+                    </div>
+                    <span class="panel-caret">▾</span>
+                </div>
+                <div class="js-panel-body" hidden>
+                <div class="table-card">
+                    <table class="scan-table">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Email</th>
+                                <th>Scans</th>
+                                <th>Serveurs</th>
+                                <th>Statut</th>
+                                <th class="th-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if users %}
+                                {% for user_item in users %}
+                                    <tr>
+                                        <td data-label="Utilisateur">
+                                            <div class="target-name">{{ user_item.first_name }} {{ user_item.last_name }}</div>
+                                            <div class="target-sub">{{ user_item.username }}</div>
+                                        </td>
+                                        <td data-label="Email">{{ user_item.email }}</td>
+                                        <td data-label="Scans"><span class="result-blue">{{ user_item.scan_count }}</span></td>
+                                        <td data-label="Serveurs"><span class="result-blue">{{ user_item.target_count }}</span></td>
+                                        <td data-label="Statut">
+                                            {% if user_item.userprofile.admin_disabled %}
+                                                <span class="status-badge neutral">Désactivé</span>
+                                            {% elif user_item.userprofile.admin_approved and user_item.userprofile.email_verified and user_item.is_active %}
+                                                <span class="status-badge completed">Actif</span>
+                                            {% elif user_item.userprofile.email_verified %}
+                                                <span class="status-badge neutral">Attente admin</span>
+                                            {% else %}
+                                                <span class="status-badge failed">Email non vérifié</span>
+                                            {% endif %}
+                                            {% if user_item.userprofile.admin_disabled and user_item.userprofile.disabled_by %}
+                                                <div class="target-sub">
+                                                    Désactivé par {{ user_item.userprofile.disabled_by.username }}
+                                                    {% if user_item.userprofile.disabled_at %}le {{ user_item.userprofile.disabled_at|date:"Y-m-d H:i" }}{% endif %}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td data-label="Action" class="th-right">
+                                            <div class="admin-actions">
+                                                {% if user_item.userprofile.email_verified and not user_item.userprofile.admin_approved and not user_item.userprofile.admin_disabled %}
+                                                    <form method="post" action="{% url 'approve_user' user_item.id %}" class="admin-inline-form js-approve-user-form">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="details-btn" data-loading-message="Validation de lâ€™utilisateur en cours...">Valider</button>
+                                                    </form>
+                                                {% endif %}
+                                                <form method="post" action="{% url 'toggle_user_active' user_item.id %}" class="admin-inline-form" onsubmit="return confirm('{% if user_item.userprofile.admin_disabled %}Réactiver ce compte ?{% else %}Désactiver ce compte sans supprimer ses données ?{% endif %}');">
+                                                    {% csrf_token %}
+                                                    {% if user_item.userprofile.admin_disabled %}
+                                                        <button type="submit" class="details-btn">Réactiver</button>
+                                                    {% else %}
+                                                        <button type="submit" class="details-btn details-btn-danger">Désactiver</button>
+                                                    {% endif %}
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="empty-row">Aucun utilisateur pour les filtres actuels.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+            </article>
+
+            <article class="panel-card js-collapsible-panel" id="section-scans">
+                <div class="section-head js-panel-trigger" role="button" tabindex="0" aria-expanded="false">
+                    <div>
+                        <p class="eyebrow">Scans</p>
+                        <h2>Exécutions globales</h2>
+                        <p class="section-copy">Groupés par serveur — cliquer pour déplier les scans détaillés</p>
+                    </div>
+                    <span class="panel-caret">▾</span>
+                </div>
+                <div class="js-panel-body" hidden>
+                {% if scan_groups %}
+                <div class="js-accordion-container admin-accordion-list">
+                    {% for group in scan_groups %}
+                    <article class="js-accordion-item admin-accordion-item">
+                        <button type="button" class="js-accordion-trigger admin-accordion-trigger" aria-expanded="false">
+                            <span class="admin-accordion-main">
+                                <span class="admin-accordion-target">{{ group.target.adresse }}</span>
+                                <span class="admin-accordion-meta">{{ group.scan_count }} scan{{ group.scan_count|pluralize }}</span>
+                                <span class="admin-accordion-meta">{{ group.owners_count }} util.</span>
+                            </span>
+                            <span class="admin-accordion-summary">
+                                <span class="admin-chip">{{ group.latest_scan.date_debut|date:"Y-m-d" }}</span>
+                                <span class="admin-chip {% if group.vulnerability_count > 0 %}alert{% endif %}">{{ group.vulnerability_count }} CVE</span>
+                                <span class="admin-caret">▾</span>
+                            </span>
+                        </button>
+                        <div class="js-accordion-body admin-accordion-body" hidden>
+                            <div class="table-card">
+                                <table class="scan-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Utilisateur</th>
+                                            <th>Statut</th>
+                                            <th>Date</th>
+                                            <th>Services</th>
+                                            <th>Vulnérabilités</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for scan in group.scans %}
+                                        <tr>
+                                            <td data-label="Utilisateur">
+                                                {% if scan.owner %}
+                                                <div class="target-name">{% if scan.owner.first_name or scan.owner.last_name %}{{ scan.owner.first_name }} {{ scan.owner.last_name }}{% else %}{{ scan.owner.username }}{% endif %}</div>
+                                                <div class="target-sub">{{ scan.owner.username }}</div>
+                                                {% else %}
+                                                <div class="target-name">—</div>
+                                                {% endif %}
+                                            </td>
+                                            <td data-label="Statut">
+                                                {% if scan.statut == "complete" %}
+                                                    <span class="status-badge completed">Complété</span>
+                                                {% elif scan.statut == "echoue" %}
+                                                    <span class="status-badge failed">Échoué</span>
+                                                {% else %}
+                                                    <span class="status-badge neutral">{{ scan.statut }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td data-label="Date">{{ scan.date_debut|date:"Y-m-d H:i" }}</td>
+                                            <td data-label="Services"><span class="result-blue">{{ scan.service_count }}</span></td>
+                                            <td data-label="Vulnérabilités"><span class="result-red">{{ scan.vulnerability_count }}</span></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-row">Aucun scan pour les filtres actuels.</div>
+                {% endif %}
+                </div>
+            </article>
+
+            <article class="panel-card js-collapsible-panel" id="section-targets">
+                <div class="section-head js-panel-trigger" role="button" tabindex="0" aria-expanded="false">
+                    <div>
+                        <p class="eyebrow">Serveurs</p>
+                        <h2>Inventaire global</h2>
+                        <p class="section-copy">Groupé par utilisateur — cliquer pour déplier les serveurs</p>
+                    </div>
+                    <span class="panel-caret">▾</span>
+                </div>
+                <div class="js-panel-body" hidden>
+                {% if inventory_groups %}
+                <div class="js-accordion-container admin-accordion-list">
+                    {% for group in inventory_groups %}
+                    <article class="js-accordion-item admin-accordion-item">
+                        <button type="button" class="js-accordion-trigger admin-accordion-trigger" aria-expanded="false">
+                            <span class="admin-accordion-main">
+                                <span class="admin-accordion-target">{% if group.owner %}{% if group.owner.first_name or group.owner.last_name %}{{ group.owner.first_name }} {{ group.owner.last_name }}{% else %}{{ group.owner.username }}{% endif %}{% else %}—{% endif %}</span>
+                                <span class="admin-accordion-meta">{% if group.owner %}{{ group.owner.username }}{% endif %}</span>
+                                <span class="admin-accordion-meta">{{ group.target_count }} serveur{{ group.target_count|pluralize }}</span>
+                            </span>
+                            <span class="admin-accordion-summary">
+                                <span class="admin-chip">{{ group.scan_count }} scan{{ group.scan_count|pluralize }}</span>
+                                <span class="admin-chip">{{ group.service_count }} services</span>
+                                <span class="admin-chip {% if group.vulnerability_count > 0 %}alert{% endif %}">{{ group.vulnerability_count }} CVE</span>
+                                <span class="admin-caret">▾</span>
+                            </span>
+                        </button>
+                        <div class="js-accordion-body admin-accordion-body" hidden>
+                            <div class="table-card">
+                                <table class="scan-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Serveur</th>
+                                            <th>Type</th>
+                                            <th>Active</th>
+                                            <th>Scans</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for target in group.targets %}
+                                        <tr>
+                                            <td data-label="Serveur">{{ target.adresse }}</td>
+                                            <td data-label="Type">{{ target.type_cible|title }}</td>
+                                            <td data-label="Active">
+                                                {% if target.active %}
+                                                    <span class="status-badge completed">Oui</span>
+                                                {% else %}
+                                                    <span class="status-badge neutral">Non</span>
+                                                {% endif %}
+                                            </td>
+                                            <td data-label="Scans"><span class="result-blue">{{ target.scan_count }}</span></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-row">Aucun serveur pour les filtres actuels.</div>
+                {% endif %}
+                </div>
+            </article>
+
+            <article class="panel-card js-collapsible-panel" id="section-banned">
+                <div class="section-head js-panel-trigger" role="button" tabindex="0" aria-expanded="false">
+                    <div>
+                        <p class="eyebrow">Sécurité</p>
+                        <h2>Adresses IP bannies</h2>
+                    </div>
+                    <span class="panel-caret">▾</span>
+                </div>
+                <div class="js-panel-body" hidden>
+                <div class="table-card">
+                    <table class="scan-table">
+                        <thead>
+                            <tr>
+                                <th>IP</th>
+                                <th>Raison</th>
+                                <th>Date</th>
+                                <th class="th-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if banned_ips %}
+                                {% for banned_ip in banned_ips %}
+                                    <tr>
+                                        <td data-label="IP">{{ banned_ip.ip_address }}</td>
+                                        <td data-label="Raison"><span class="admin-chip alert">{{ banned_ip.reason }}</span></td>
+                                        <td data-label="Date">{{ banned_ip.banned_at|date:"Y-m-d H:i:s" }}</td>
+                                        <td data-label="Action" class="th-right">
+                                            <form method="post" action="{% url 'unban_ip' banned_ip.id %}" class="admin-inline-form">
+                                                {% csrf_token %}
+                                                <button type="submit" class="details-btn">Débannir</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="empty-row">Aucune adresse IP bannie.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+            </article>
+        </section>
+    </main>
+</div>
+
+<div class="admin-loading-overlay" id="adminApproveOverlay" aria-hidden="true">
+    <div class="admin-loading-card" role="status" aria-live="polite">
+        <div class="admin-loading-spinner" aria-hidden="true"></div>
+        <p class="admin-loading-text">Validation de l'utilisateur en cours</p>
+    </div>
+</div>
+
+<script src="{% static 'app_dashboard/js/scans_page.js' %}"></script>
+<script>
+    (function () {
+        const overlay = document.getElementById("adminApproveOverlay");
+        const approveForms = document.querySelectorAll(".js-approve-user-form");
+
+        function showOverlay() {
+            overlay.classList.add("is-visible");
+            overlay.setAttribute("aria-hidden", "false");
+        }
+
+        approveForms.forEach((form) => {
+            form.addEventListener("submit", () => {
+                showOverlay();
+            });
+        });
+    })();
+</script>
+<script>
+    (function () {
+        function openPanel(panel) {
+            var body = panel.querySelector('.js-panel-body');
+            var trigger = panel.querySelector('.js-panel-trigger');
+            if (!panel.classList.contains('is-open')) {
+                panel.classList.add('is-open');
+                body.hidden = false;
+                if (trigger) trigger.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        document.querySelectorAll('.js-panel-trigger').forEach(function (trigger) {
+            trigger.addEventListener('click', function () {
+                var panel = trigger.closest('.js-collapsible-panel');
+                var body = panel.querySelector('.js-panel-body');
+                var open = panel.classList.toggle('is-open');
+                body.hidden = !open;
+                trigger.setAttribute('aria-expanded', String(open));
+            });
+        });
+
+        document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+            link.addEventListener('click', function () {
+                var target = document.querySelector(link.getAttribute('href'));
+                if (target && target.classList.contains('js-collapsible-panel')) {
+                    openPanel(target);
+                }
+            });
+        });
+    })();
+</script>
+</body>
+</html>

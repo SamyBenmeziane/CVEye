@@ -1,59 +1,110 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
     <title>Scans - CVEye</title>
     <link rel="stylesheet" href="{% static 'app_dashboard/css/scans_page.css' %}">
+    <script>try{if(localStorage.getItem("cveye.theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
 </head>
 <body>
-<div class="app-layout sidebar-open" id="appLayout">
+<div class="app-layout sidebar-open scans-page-marker" id="appLayout">
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-top">
-            <div class="brand">
-                <div class="brand-logo">[]</div>
+            <div class="sidebar-brand-row">
+            <a href="{% url 'dashboard' %}" class="brand">
+                <div class="brand-logo">
+                    <img src="{% static 'app_dashboard/img/logo_cveye.png' %}" alt="Logo CVEye" class="brand-logo-image">
+                </div>
                 <div class="brand-text">
                     <div class="brand-title">CVEye</div>
-                    <div class="brand-subtitle">Security Platform</div>
+                    <div class="brand-subtitle">Surveillance de la sécurité</div>
                 </div>
+            </a>
+                <button type="button" class="sidebar-toggle sidebar-toggle-nav" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
             </div>
         </div>
 
-        <nav class="sidebar-nav">
+        <nav class="sidebar-nav" aria-label="Navigation principale">
+            {% if request.user.is_superuser %}
+            <a href="{% url 'admin_console' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
+                <span class="nav-label">Administration</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
+            </a>
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <span class="nav-label">Recherche de vulnérabilités</span>
+            </a>
+            {% else %}
             <a href="{% url 'dashboard' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
                 <span class="nav-label">Tableau de bord</span>
             </a>
             <a href="{% url 'targets' %}" class="nav-link">
-                <span class="nav-label">Targets</span>
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
             </a>
             <a href="{% url 'scans' %}" class="nav-link active">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                </span>
                 <span class="nav-label">Scans</span>
             </a>
-            <a href="#" class="nav-link">
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
                 <span class="nav-label">Vulnérabilités</span>
             </a>
-            <a href="#" class="nav-link">
-                <span class="nav-label">Alertes</span>
+            <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <span class="nav-label">Recherche de vulnérabilités</span>
             </a>
-            <a href="#" class="nav-link">
-                <span class="nav-label">Rapports</span>
-            </a>
-            <a href="#" class="nav-link">
-                <span class="nav-label">Réglages</span>
-            </a>
-            <a href="{% url 'accounts:logout' %}" class="nav-link">
-                <span class="nav-label">Déconnexion</span>
-            </a>
+            {% endif %}
         </nav>
 
-        <div class="sidebar-footer">
+        <div class="sidebar-footer profile-menu-container">
             <div class="user-avatar">
                 {{ request.user.username|slice:":1"|upper }}
             </div>
-            <div class="sidebar-user-text">
-                <div class="user-name">{{ request.user.username }}</div>
-                <div class="user-email">{{ request.user.email }}</div>
+            <button type="button" class="sidebar-user-button" id="profileMenuToggle" aria-expanded="false">
+                <div class="sidebar-user-text">
+                    <div class="user-name">{{ request.user.username }}</div>
+                    <div class="user-email">{{ request.user.email|default:"Compte connecté" }}</div>
+                </div>
+                <span class="profile-menu-caret">+</span>
+            </button>
+            <div class="profile-menu" id="profileMenu">
+                <a href="{% url 'accounts:settings' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" /><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.2 1.2a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.8a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.7-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0L4.3 18a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H3.5a1 1 0 0 1-1-1v-1.8a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.7 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h1.8a1 1 0 0 1 1 1v.2a1 1 0 0 0 .7.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.2 1.2a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v1.8a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.7Z" /></svg></span><span>Réglages</span></a>
+                <a href="{% url 'accounts:logout' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg"><path d="M10 17l5-5-5-5" /><path d="M15 12H4" /><path d="M20 4v16" /></svg></span><span>Déconnexion</span></a>
             </div>
         </div>
     </aside>
@@ -61,33 +112,30 @@
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-left">
-                <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Ouvrir ou fermer la barre laterale">
-                    ==
+                <button type="button" class="sidebar-toggle sidebar-toggle-mobile" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
                 </button>
 
-                <div class="topbar-search">
-                    <input type="text" placeholder="Search targets, CVEs, or scans...">
+                <div class="page-intro">
+                    <p class="eyebrow">Historique</p>
+                    <h1>Scans</h1>
                 </div>
             </div>
 
             <div class="topbar-right">
-                <div class="system-pill">All Systems Operational</div>
-
-                <button type="button" class="topbar-icon" aria-label="Notifications" title="Notifications">
-                    🔔
-                </button>
-
-                <div class="topbar-user" title="{{ request.user.username }}">
-                    {{ request.user.username|slice:":1"|upper }}
-                </div>
+                <div class="system-pill">Analyse continue</div>
+                <a href="{% url 'targets' %}" class="primary-btn">Voir les serveurs</a>
             </div>
         </header>
 
         <section class="page-content">
-            <div class="page-header">
+            <div class="section-head section-head-spaced">
                 <div>
-                    <h1>Scans</h1>
-                    <p>
+                    <p class="eyebrow">Suivi des exécutions</p>
+                    <h2>Consulter les scans et leurs détails</h2>
+                    <p class="section-copy">
                         {% if scans %}
                             {{ scans|length }} scan{{ scans|length|pluralize }} enregistre{{ scans|length|pluralize }}
                         {% else %}
@@ -95,248 +143,282 @@
                         {% endif %}
                     </p>
                 </div>
-
-                <div class="scan-form-header">
-                    <a href="{% url 'targets' %}" class="primary-btn">Aller aux targets</a>
-                </div>
             </div>
+
+            <section class="metrics-grid">
+                <a href="{% url 'scans' %}{% if selected_target_id %}?target={{ selected_target_id }}{% endif %}" class="metric-card metric-card-link metric-card-primary">
+                    <p class="metric-label">Total</p>
+                    <h3>{{ scan_summary.total }}</h3>
+                    <p class="metric-meta">Tous les scans visibles</p>
+                </a>
+                <a href="{% url 'scans' %}?status=en_cours{% if selected_target_id %}&target={{ selected_target_id }}{% endif %}" class="metric-card metric-card-link metric-card-primary">
+                    <p class="metric-label">En cours</p>
+                    <h3>{{ scan_summary.in_progress }}</h3>
+                    <p class="metric-meta">En attente ou en cours</p>
+                </a>
+                <a href="{% url 'scans' %}?status=echoue{% if selected_target_id %}&target={{ selected_target_id }}{% endif %}" class="metric-card metric-card-link metric-card-warning">
+                    <p class="metric-label">Échoués</p>
+                    <h3>{{ scan_summary.failed }}</h3>
+                    <p class="metric-meta">À traiter en priorité</p>
+                </a>
+                <a href="{% url 'vulnerabilities' %}?severity=Critique" class="metric-card metric-card-alert metric-card-link metric-card-danger">
+                    <p class="metric-label">Avec critique</p>
+                    <h3>{{ scan_summary.critical }}</h3>
+                    <p class="metric-meta">Au moins une CVE critique</p>
+                </a>
+            </section>
 
             {% if messages %}
-                {% for message in messages %}
-                    <div class="alert {% if message.tags == 'error' %}error{% else %}success{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
+                <div class="toast-stack">
+                    {% for message in messages %}
+                        <div class="alert toast {% if message.tags == 'error' %}error{% else %}succèss{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
             {% endif %}
+            <div class="toast-stack toast-stack-live" id="liveScanToastStack" aria-live="polite" aria-atomic="false"></div>
 
-            <div class="filter-card">
-                <form method="get" style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+            <article class="panel-card">
+                <div class="section-head">
                     <div>
-                        <label for="target-filter">Filtrer par cible</label>
-                        <select id="target-filter" name="target">
-                            <option value="">Toutes les cibles</option>
-                            {% for target in targets %}
-                                <option value="{{ target.id }}" {% if selected_target_id == target.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ target.adresse }}
-                                </option>
-                            {% endfor %}
-                        </select>
+                        <p class="eyebrow">Filtres</p>
+                        <h2>Affiner la liste</h2>
+                    </div>
+                </div>
+
+                <form method="get" class="modern-form compact-form">
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="target-filter">Filtrer par serveur</label>
+                            <select id="target-filter" name="target">
+                                <option value="">Tous les serveurs</option>
+                                {% for target in targets %}
+                                    <option value="{{ target.id }}" {% if selected_target_id == target.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ target.adresse }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="status-filter">Filtrer par statut</label>
+                            <select id="status-filter" name="status">
+                                <option value="">Tous les statuts</option>
+                                <option value="complete" {% if selected_status == "complete" %}selected{% endif %}>Complété</option>
+                                <option value="echoue" {% if selected_status == "echoue" %}selected{% endif %}>Échoué</option>
+                                <option value="en_cours" {% if selected_status == "en_cours" %}selected{% endif %}>En cours</option>
+                                <option value="en_attente" {% if selected_status == "en_attente" %}selected{% endif %}>En attente</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div>
-                        <label for="status-filter">Filtrer par statut</label>
-                        <select id="status-filter" name="status">
-                            <option value="">Tous les statuts</option>
-                            <option value="complete" {% if selected_status == "complete" %}selected{% endif %}>Complete</option>
-                            <option value="echoue" {% if selected_status == "echoue" %}selected{% endif %}>Échoué</option>
-                            <option value="en_cours" {% if selected_status == "en_cours" %}selected{% endif %}>En cours</option>
-                            <option value="en_attente" {% if selected_status == "en_attente" %}selected{% endif %}>En attente</option>
-                        </select>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn">Filtrer</button>
+                        <a href="{% url 'scans' %}" class="details-btn">Réinitialiser</a>
                     </div>
-
-                    <button type="submit" class="primary-btn">Filtrer</button>
-                    <a href="{% url 'scans' %}" class="details-btn">Réinitialiser</a>
                 </form>
-            </div>
 
-            <div class="table-card">
-                <table class="scan-table">
-                    <thead>
-                    <tr>
-                        <th>SERVEUR</th>
-                        <th>STATUT</th>
-                        <th>TEMPS DU SCAN</th>
-                        <th>DUREE</th>
-                        <th>RESULTATS</th>
-                        <th class="th-right">ACTIONS</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% if scans %}
-                        {% for scan in scans %}
+                <div class="quick-filter-row">
+                    <a href="{% url 'scans' %}?status=echoue{% if selected_target_id %}&target={{ selected_target_id }}{% endif %}" class="quick-filter-chip {% if selected_status == 'echoue' %}is-active{% endif %}">Scans échoués</a>
+                    <a href="{% url 'scans' %}?status=en_cours{% if selected_target_id %}&target={{ selected_target_id }}{% endif %}" class="quick-filter-chip {% if selected_status == 'en_cours' %}is-active{% endif %}">En cours</a>
+                    <a href="{% url 'vulnerabilities' %}?severity=Critique" class="quick-filter-chip">Voir critiques</a>
+                    <a href="{% url 'scans' %}" class="quick-filter-chip {% if not selected_status and not selected_target_id %}is-active{% endif %}">Tous</a>
+                </div>
+            </article>
+
+            <article class="panel-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">Journal</p>
+                        <h2>Liste des scans</h2>
+                    </div>
+                </div>
+
+                <div class="table-card">
+                    <table class="scan-table">
+                        <thead>
                         <tr>
-                            <td>
-                                <div class="target-cell">
-                                    <div class="target-icon">[]</div>
-                                    <div>
-                                        <div class="target-name">{{ scan.cible.adresse }}</div>
-                                        <div class="target-sub">{{ scan.version_scanner }}</div>
+                            <th>Serveur</th>
+                            <th>Statut</th>
+                            <th>Temps du scan</th>
+                            <th>Durée</th>
+                            <th>Resultats</th>
+                            <th class="th-right">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% if scans %}
+                            {% for scan in scans %}
+                            <tr data-scan-row-id="{{ scan.id }}" {% if scan.statut == "en_cours" or scan.statut == "en_attente" %}data-scan-active="true"{% endif %}>
+                                <td data-label="Serveur">
+                                    <div class="target-cell">
+                                        <div class="target-icon">SV</div>
+                                        <div>
+                                            <div class="target-name">{{ scan.cible.adresse }}</div>
+                                            <div class="target-sub">{{ scan.version_scanner }}</div>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td>
-                                {% if scan.statut == "complete" %}
-                                    <span class="status-badge completed">Completed</span>
-                                {% elif scan.statut == "echoue" %}
-                                    <span class="status-badge failed">Failed</span>
-                                {% else %}
-                                    <span class="status-badge neutral">{{ scan.statut }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="cell-main">{{ scan.date_debut|date:"Y-m-d H:i:s" }}</div>
-                            </td>
-                            <td>
-                                <div class="cell-main">
-                                    {% if scan.duration_seconds is not None %}
-                                        {{ scan.duration_seconds }} s
+                                </td>
+                                <td data-label="Statut">
+                                    {% if scan.statut == "complete" %}
+                                        <span class="status-badge completed" data-scan-status="{{ scan.id }}">Complété</span>
+                                    {% elif scan.statut == "echoue" %}
+                                        <span class="status-badge failed" data-scan-status="{{ scan.id }}">Failed</span>
                                     {% else %}
-                                        N/A
+                                        <span class="status-badge neutral" data-scan-status="{{ scan.id }}">{{ scan.statut }}</span>
                                     {% endif %}
-                                </div>
-                            </td>
-                            <td>
-                                <div class="result-line">
-                                    Services:
-                                    <span class="result-blue">{{ scan.service_count }}</span>
-                                </div>
-                                <div class="result-line">
-                                    Vulnerabilities:
-                                    <span class="result-red">{{ scan.vulnerability_count }}</span>
-                                </div>
-                            </td>
-                            <td class="th-right">
-                                {% if selected_scan and scan.id == selected_scan.id %}
-                                    <button type="button" class="details-btn" id="openDetailsBtn">
-                                        View Details
-                                    </button>
-                                {% else %}
-                                    <span class="details-btn">Latest Above</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="6" class="empty-row">
-                                Lance un scan pour afficher les resultats ici.
-                            </td>
-                        </tr>
-                    {% endif %}
-                    </tbody>
-                </table>
-            </div>
+                                </td>
+                                <td data-label="Temps du scan">
+                                    <div class="cell-main">{{ scan.date_debut|date:"Y-m-d H:i:s" }}</div>
+                                </td>
+                                <td data-label="Durée">
+                                    <div class="cell-main" data-scan-duration="{{ scan.id }}">
+                                        {% if scan.duration_seconds is not None %}
+                                            {{ scan.duration_seconds }} s
+                                        {% elif scan.statut == "en_cours" or scan.statut == "en_attente" %}
+                                            0 s
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td data-label="Resultats">
+                                    <div class="result-line">
+                                        Services trouves:
+                                        <span class="result-blue" data-scan-open-ports="{{ scan.id }}">{{ scan.ports_ouverts }}</span>
+                                    </div>
+                                    <div class="result-line">
+                                        Vulnérabilités:
+                                        <a href="{% url 'vulnerabilities' %}?target={{ scan.cible.id }}" class="result-red">{{ scan.vulnerability_count }}</a>
+                                    </div>
+                                    <div class="result-line result-progress" data-scan-progress="{{ scan.id }}">
+                                        Progression:
+                                        <span class="progress-inline">
+                                            {% if scan.statut == "complete" %}
+                                                {{ scan.ports_scannes }} / {{ scan.ports_scannes }} ports (100%)
+                                            {% else %}
+                                                {{ scan.ports_scannes_courant }} / {{ scan.ports_scannes }} ports
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td data-label="Actions" class="th-right">
+                                    <a
+                                        href="{% url 'scan_details' scan.id %}"
+                                        class="details-btn scan-details-trigger {% if selected_scan_id == scan.id|stringformat:'s' %}details-btn-active{% endif %}"
+                                        data-details-url="{% url 'scan_details' scan.id %}"
+                                        data-scan-id="{{ scan.id }}"
+                                    >
+                                        Voir détails
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="empty-row">Lance un scan pour afficher les résultats ici.</td>
+                            </tr>
+                        {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
         </section>
     </main>
 </div>
 
-<div class="modal-backdrop" id="scanDetailsModal">
+<div class="modal-backdrop{% if selected_scan_id %} show{% endif %}" id="scanDetailsModal" data-auto-open="{% if selected_scan_id %}true{% else %}false{% endif %}" {% if selected_scan %}data-selected-scan-id="{{ selected_scan.id }}"{% endif %}>
     <div class="modal-card">
         <div class="modal-header">
             <div>
-                <h2>Details du Scan</h2>
-                <p>{% if selected_scan %}{{ selected_scan.cible.adresse }}{% else %}Aucune cible{% endif %}</p>
+                <p class="eyebrow">Analyse détaillée</p>
+                <h2>Détails du scan</h2>
+                <p id="scanDetailsTarget">{% if selected_scan %}{{ selected_scan.cible.adresse }}{% else %}Aucun serveur{% endif %}</p>
             </div>
-            <button class="modal-close" id="closeDetailsBtn" type="button">X</button>
+            <button class="modal-close" id="closeDetailsBtn" type="button" aria-label="Fermer les détails">X</button>
         </div>
 
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="stat-label">Status</div>
-                {% if selected_scan %}
-                    {% if selected_scan.statut == "complete" %}
-                        <div class="status-badge completed">Complete</div>
-                    {% elif selected_scan.statut == "echoue" %}
-                        <div class="status-badge failed">Echoue</div>
+                <div id="scanDetailsStatus">
+                    {% if selected_scan %}
+                        {% if selected_scan.statut == "complete" %}
+                            <div class="status-badge completed">Complété</div>
+                        {% elif selected_scan.statut == "echoue" %}
+                            <div class="status-badge failed">Échoué</div>
+                        {% else %}
+                            <div class="status-badge neutral">{{ selected_scan.statut }}</div>
+                        {% endif %}
                     {% else %}
-                        <div class="status-badge neutral">{{ selected_scan.statut }}</div>
+                        <div class="status-badge neutral">En attente</div>
                     {% endif %}
-                {% else %}
-                    <div class="status-badge neutral">En attente</div>
-                {% endif %}
-            </div>
-
-            <div class="stat-box">
-                <div class="stat-label">Services Found</div>
-                <div class="stat-value blue">
-                    {% if selected_scan %}{{ selected_scan.service_count }}{% else %}0{% endif %}
                 </div>
             </div>
 
             <div class="stat-box">
-                <div class="stat-label">Vulnerabilites</div>
-                <div class="stat-value red">
+                <div class="stat-label">Services trouvés</div>
+                <div class="stat-value blue" id="scanDetailsPorts">
+                    {% if selected_scan %}{{ selected_scan.ports_ouverts }}{% else %}0{% endif %}
+                </div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-label">Vulnérabilités</div>
+                <div class="stat-value red" id="scanDetailsVulns">
                     {% if selected_scan %}{{ selected_scan.vulnerability_count }}{% else %}0{% endif %}
                 </div>
             </div>
         </div>
 
         <div class="details-section">
-            <h3>Ports Ouverts et Services</h3>
+            <div class="scan-severity-toolbar" id="scanSeverityToolbar" hidden>
+                <div class="severity-chip-row" id="scanSeveritySummary"></div>
+                <div class="severity-nav" id="scanSeverityNav" hidden>
+                    <button type="button" class="details-btn" id="severityPrevBtn">Précédent</button>
+                    <span class="table-note" id="severityNavLabel">1 / 1</span>
+                    <button type="button" class="details-btn" id="severityNextBtn">Suivant</button>
+                </div>
+            </div>
 
-            <div class="details-table-wrap">
-                <table class="details-table">
-                    <thead>
-                    <tr>
-                        <th>Port</th>
-                        <th>Protocole</th>
-                        <th>Service</th>
-                        <th>Version</th>
-                        <th>Statut</th>
-                        <th>Autres</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% if resultat %}
-                        {% for r in resultat %}
-                            <tr>
-                                <td>{{ r.port }}</td>
-                                <td>TCP</td>
-                                <td>{{ r.service|default:"unknown"|title }}</td>
-                                <td>{{ r.display_version }}</td>
-                                <td><span class="mini-status">ouvert</span></td>
-                                <td>
-                                    <div class="autres-cell">
-                                        {% if r.banner %}
-                                            <div class="autres-item">
-                                                <span class="autres-label">Banniere:</span>
-                                                <span>{{ r.banner }}</span>
-                                            </div>
-                                        {% endif %}
+            <div class="section-head">
+                <div>
+                    <p class="eyebrow">Ports et services</p>
+                    <h2>Résultats techniques</h2>
+                </div>
+            </div>
 
-                                        {% if r.product %}
-                                            <div class="autres-item">
-                                                <span class="autres-label">Produit:</span>
-                                                <span>{{ r.product }}</span>
-                                            </div>
-                                        {% endif %}
-
-                                        {% if r.vulnerabilities %}
-                                            <div class="autres-item">
-                                                <span class="autres-label">CVEs:</span>
-                                                <div class="autres-block">
-                                                    {% for vuln in r.vulnerabilities %}
-                                                        <div>{{ vuln.cve_id }}{% if vuln.severity %} - {{ vuln.severity }}{% endif %}</div>
-                                                    {% endfor %}
-                                                </div>
-                                            </div>
-                                        {% endif %}
-
-                                        {% if r.headers_without_server %}
-                                            <div class="autres-item">
-                                                <span class="autres-label">En-tetes:</span>
-                                                <div class="autres-block">
-                                                    {% for k, v in r.headers_without_server.items %}
-                                                        <div>{{ k }} : {{ v }}</div>
-                                                    {% endfor %}
-                                                </div>
-                                            </div>
-                                        {% endif %}
-
-                                        {% if not r.banner and not r.product and not r.headers_without_server and not r.vulnerabilities %}
-                                            -
-                                        {% endif %}
-                                    </div>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="6" class="empty-row">Aucun port ouvert a afficher.</td>
-                        </tr>
-                    {% endif %}
-                    </tbody>
-                </table>
+            <div class="scan-accordion-list" id="scanDetailsTableBody">
+                {% if resultat %}
+                    {% for r in resultat %}
+                        <article class="scan-accordion-item" data-severities="{{ r.severities_str }}" data-matches-severity="true" data-dominant="{{ r.dominant_severity }}">
+                            <div class="scan-accordion-head">
+                                <button type="button" class="scan-accordion-trigger" aria-expanded="false">
+                                    <span class="scan-accordion-main">
+                                        <span class="scan-accordion-port">{{ r.port }}/{{ r.protocol|default:"TCP" }}</span>
+                                        <span class="scan-accordion-service">{{ r.service|default:"unknown"|title }}</span>
+                                        <span class="scan-accordion-version">{{ r.display_version }}</span>
+                                    </span>
+                                    <span class="scan-accordion-summary">
+                                        <span class="severity-chip severity-critique">Critique {{ r.severity_counts.Critique|default:0 }}</span>
+                                        <span class="severity-chip severity-elevee">Élevée {{ r.severity_counts.Élevée|default:0 }}</span>
+                                        <span class="severity-chip severity-moyenne">Moyenne {{ r.severity_counts.Moyenne|default:0 }}</span>
+                                        <span class="severity-chip severity-faible">Faible {{ r.severity_counts.Faible|default:0 }}</span>
+                                    </span>
+                                </button>
+                                {% if selected_scan %}
+                                <form method="post" action="{% url 'launch_target_port_scan_async' selected_scan.cible.id r.port %}" class="launch-scan-form port-rescan-form" data-scan-label="Revérification du port {{ r.port }} sur {{ selected_scan.cible.adresse }}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="port-rescan-btn" title="Revérifier ce port" aria-label="Revérifier le port {{ r.port }}">↻</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-row">Aucun port ouvert à afficher.</div>
+                {% endif %}
             </div>
         </div>
     </div>

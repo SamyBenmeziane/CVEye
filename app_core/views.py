@@ -6,9 +6,15 @@ from django.core.mail import EmailMultiAlternatives, get_connection
 from .forms import InstallationForm
 from .models import InstallationConfig
 from app_accounts.models import UserProfile
+from app_accounts.utils import generate_unique_username
 
 
 def install_view(request):
+    """Gère l'assistant d'installation initiale : création du super administrateur et configuration SMTP.
+
+    Vérifie qu'aucun utilisateur n'existe déjà, teste la connexion SMTP avant de sauvegarder,
+    puis crée le compte administrateur, son profil et la configuration du site.
+    """
     config = InstallationConfig.load()
 
     if config.is_installed:
@@ -20,6 +26,7 @@ def install_view(request):
         if form.is_valid():
             User = get_user_model()
 
+            # On refuse linstallation si un utilisateur existe deja pour eviter une reinitialisation sauvage
             if User.objects.exists():
                 return render(
                     request,
@@ -32,6 +39,9 @@ def install_view(request):
 
             admin_email = form.cleaned_data["admin_email"]
             admin_password = form.cleaned_data["admin_password"]
+            admin_first_name = form.cleaned_data["admin_first_name"]
+            admin_last_name = form.cleaned_data["admin_last_name"]
+            admin_username = generate_unique_username(admin_first_name, admin_last_name)
 
             smtp_host = form.cleaned_data.get("smtp_host", "")
             smtp_port = form.cleaned_data.get("smtp_port") or 587
@@ -51,6 +61,7 @@ def install_view(request):
                     }
                 )
 
+            # On teste le SMTP tout de suite pour ne pas sauver une config inutilisable
             try:
                 connection = get_connection(
                     backend="django.core.mail.backends.smtp.EmailBackend",
@@ -83,12 +94,20 @@ def install_view(request):
                 )
 
             admin_user = User.objects.create_superuser(
-                username=admin_email,
+                username=admin_username,
                 email=admin_email,
-                password=admin_password
+                password=admin_password,
+                first_name=admin_first_name,
+                last_name=admin_last_name,
             )
 
-            UserProfile.objects.create(user=admin_user, email_verified=True)
+            UserProfile.objects.create(
+                user=admin_user,
+                email_verified=True,
+                admin_approved=True,
+                approved_at=timezone.now(),
+                approved_by=admin_user,
+            )
 
             config.site_name = form.cleaned_data["site_name"]
             config.smtp_host = smtp_host

@@ -25,13 +25,36 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-2v-@kn=wmf)rdu-gd^2)a9a^2g!44ny=4z)e2!x7n#s%(+1&w$'
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-dev-fallback-do-not-use-in-prod")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = ["92.222.197.10" , "localhost" , "127.0.0.1" , "vps-c3f465b3.vps.ovh.net","www.vps-c3f465b3.vps.ovh.net", "cveye.ovh", "www.cveye.ovh", "app.cveye.ovh"]
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
 
+ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if host.strip()]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://cveye.ovh",
+    "https://www.cveye.ovh",
+    "https://app.cveye.ovh",
+]
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Headers de securite HTTPS - actives uniquement en production (DEBUG=False)
+# Voir https://docs.djangoproject.com/en/stable/topics/security/
+if not DEBUG:
+    # HSTS : force le navigateur a utiliser HTTPS pour 1 an
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Redirige automatiquement toute requete HTTP vers HTTPS
+    SECURE_SSL_REDIRECT = True
+
+    # Les cookies de session et CSRF ne sont envoyes que via HTTPS
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # Application definition
 
@@ -57,6 +80,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'app_accounts.middleware.AccountStatusMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -94,6 +118,12 @@ DATABASES = {
     }
 }
 
+SCAN_MAX_THREADS = int(os.getenv("SCAN_MAX_THREADS", "5000"))
+CVE_LOOKUP_MAX_THREADS = int(os.getenv("CVE_LOOKUP_MAX_THREADS", "8"))
+NVD_REQUEST_TIMEOUT_SECONDS = float(os.getenv("NVD_REQUEST_TIMEOUT_SECONDS", "2"))
+NVD_MAX_RETRIES = int(os.getenv("NVD_MAX_RETRIES", "2"))
+NVD_BACKOFF_SECONDS = float(os.getenv("NVD_BACKOFF_SECONDS", "0.2"))
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -117,9 +147,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr-fr'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Paris'
 
 USE_I18N = True
 
@@ -130,6 +160,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/scans/"

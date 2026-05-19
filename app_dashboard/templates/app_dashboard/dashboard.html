@@ -1,18 +1,287 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
     <title>Dashboard - CVEye</title>
-    <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/scans_page.css' %}">
+    <script>try{if(localStorage.getItem("cveye.theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
 </head>
-<body class="auth-body">
-    <div class="auth-card">
-        <h1>Bienvenue sur CVEye</h1>
-        <p>Vous êtes connecté.</p>
-        <p class="auth-link"><a href="{% url 'scans' %}">Aller à la page Scans</a></p>
-        <p class="auth-link"><a href="{% url 'accounts:logout' %}">Se déconnecter</a></p>
-    </div>
+<body>
+<div class="app-layout sidebar-open dashboard-page-marker" id="appLayout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+            <div class="sidebar-brand-row">
+            <a href="{% url 'dashboard' %}" class="brand">
+                <div class="brand-logo">
+                    <img src="{% static 'app_dashboard/img/logo_cveye.png' %}" alt="Logo CVEye" class="brand-logo-image">
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title">CVEye</div>
+                    <div class="brand-subtitle">Monitoring security</div>
+                </div>
+            </a>
+                <button type="button" class="sidebar-toggle sidebar-toggle-nav" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Navigation principale">
+            {% if request.user.is_superuser %}
+            <a href="{% url 'admin_console' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
+                <span class="nav-label">Administration</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
+            </a>
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <span class="nav-label">Recherche de vulnérabilités</span>
+            </a>
+            {% else %}
+            <a href="{% url 'dashboard' %}" class="nav-link active">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
+                <span class="nav-label">Tableau de bord</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
+            </a>
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <span class="nav-label">Recherche de vulnérabilités</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer profile-menu-container">
+            <div class="user-avatar">
+                {{ request.user.username|slice:":1"|upper }}
+            </div>
+            <button type="button" class="sidebar-user-button" id="profileMenuToggle" aria-expanded="false">
+                <div class="sidebar-user-text">
+                    <div class="user-name">{{ request.user.username }}</div>
+                    <div class="user-email">{{ request.user.email|default:"Compte connecté" }}</div>
+                </div>
+                <span class="profile-menu-caret">+</span>
+            </button>
+            <div class="profile-menu" id="profileMenu">
+                <a href="{% url 'accounts:settings' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" /><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.2 1.2a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.8a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.7-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0L4.3 18a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H3.5a1 1 0 0 1-1-1v-1.8a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.7 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h1.8a1 1 0 0 1 1 1v.2a1 1 0 0 0 .7.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.2 1.2a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v1.8a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.7Z" /></svg></span><span>Réglages</span></a>
+                <a href="{% url 'accounts:logout' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg"><path d="M10 17l5-5-5-5" /><path d="M15 12H4" /><path d="M20 4v16" /></svg></span><span>Déconnexion</span></a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button type="button" class="sidebar-toggle sidebar-toggle-mobile" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <div class="page-intro">
+                    <p class="eyebrow">Vue generale</p>
+                    <h1>Tableau de bord</h1>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <div class="system-pill">Plateforme active</div>
+                <a href="{% url 'targets' %}" class="details-btn">Voir les serveurs</a>
+                <a href="{% url 'vulnerabilities' %}" class="primary-btn">Voir les vulnérabilités</a>
+            </div>
+        </header>
+
+        <section class="page-content">
+            <section class="hero-card">
+                <div class="hero-copy">
+                    <p class="eyebrow">Supervision centralisée</p>
+                    <h2>Une vue claire de vos scans, services et vulnerabilités.</h2>
+                    <p>
+                        Cette interface rassemble les indicateurs essentiels pour suivre l'état global
+                        de la plateforme et accéder rapidement aux pages opérationnelles.
+                    </p>
+                </div>
+                <div class="hero-actions">
+                <a href="{% url 'targets' %}" class="primary-btn">Ajouter ou gérer des serveurs</a>
+                    <a href="{% url 'vulnerabilities' %}" class="details-btn">Consulter les vulnérabilités</a>
+                </div>
+            </section>
+
+            <section class="metrics-grid">
+                <a href="{% url 'scans' %}" class="metric-card metric-card-link metric-card-primary">
+                    <p class="metric-label">Total scans</p>
+                    <h3>{{ total_scans }}</h3>
+                    <p class="metric-meta">Historique complet des exécutions</p>
+                </a>
+                <a href="{% url 'targets' %}" class="metric-card metric-card-link metric-card-primary">
+                    <p class="metric-label">Serveurs</p>
+                    <h3>{{ total_targets }}</h3>
+                    <p class="metric-meta">Serveurs enregistrés dans votre espace</p>
+                </a>
+                <a href="{% url 'scans' %}?status=complete" class="metric-card metric-card-link metric-card-success">
+                    <p class="metric-label">Scans complétés</p>
+                    <h3>{{ completed_scans }}</h3>
+                    <p class="metric-meta">Operations terminées avec succès</p>
+                </a>
+                <a href="{% url 'scans' %}?status=echoue" class="metric-card metric-card-link metric-card-warning">
+                    <p class="metric-label">Scans échoués</p>
+                    <h3>{{ failed_scans }}</h3>
+                    <p class="metric-meta">Exécutions a vérifier en priorité</p>
+                </a>
+                <a href="{% url 'scans' %}" class="metric-card metric-card-link metric-card-primary">
+                    <p class="metric-label">Services détectés</p>
+                    <h3>{{ total_services }}</h3>
+                    <p class="metric-meta">Services identifiés sur l'ensemble des scans</p>
+                </a>
+                <a href="{% url 'vulnerabilities' %}?severity=Critique" class="metric-card metric-card-alert metric-card-link metric-card-danger">
+                    <p class="metric-label">Vulnérabilités critiques</p>
+                    <h3>{{ critical_vulnerabilities }}</h3>
+                    <p class="metric-meta">Sur {{ total_vulnerabilities }} vulnérabilités totales</p>
+                </a>
+            </section>
+
+            <section class="content-grid">
+                <article class="panel-card">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Activite recente</p>
+                            <h2>Derniers scans</h2>
+                        </div>
+                        <a href="{% url 'targets' %}" class="details-btn">Voir les machines</a>
+                    </div>
+
+                    <div class="table-card">
+                        <table class="scan-table">
+                            <thead>
+                            <tr>
+                                <th>Serveur</th>
+                                <th>Statut</th>
+                                <th>Date</th>
+                                <th>Services</th>
+                                <th>Vulnérabilités</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% if latest_scans %}
+                                {% for scan in latest_scans %}
+                                    <tr>
+                                        <td data-label="Serveur">
+                                            <div class="target-cell">
+                                                <div class="target-icon">SV</div>
+                                                <div>
+                                                    <div class="target-name"><a href="{% url 'target_detail' scan.cible.id %}" class="details-btn">{{ scan.cible.adresse }}</a></div>
+                                                    <div class="target-sub">{{ scan.version_scanner }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td data-label="Statut">
+                                            {% if scan.statut == "complete" %}
+                                                <span class="status-badge completed">Complété</span>
+                                            {% elif scan.statut == "echoue" %}
+                                                <span class="status-badge failed">Échoué</span>
+                                            {% else %}
+                                                <span class="status-badge neutral">{{ scan.statut }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td data-label="Date">
+                                            <div class="cell-main">{{ scan.date_debut|date:"Y-m-d H:i:s" }}</div>
+                                        </td>
+                                        <td data-label="Services">
+                                            <span class="result-blue">{{ scan.service_count }}</span>
+                                        </td>
+                                        <td data-label="Vulnérabilités">
+                                            <a href="{% url 'vulnerabilities' %}?target={{ scan.cible.id }}" class="result-red">{{ scan.vulnerability_count }}</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="empty-row">Aucun scan disponible pour le moment.</td>
+                                </tr>
+                            {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="panel-card">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Accès rapide</p>
+                            <h2>Actions principales</h2>
+                        </div>
+                    </div>
+
+                    <div class="shortcut-list">
+                        <a href="{% url 'targets' %}" class="shortcut-card shortcut-card-primary">
+                            <div>
+                                <h3>Gérer les serveurs</h3>
+                                <p>Ajouter un serveur, activer la surveillance et suivre les prochains scans.</p>
+                            </div>
+                            <span class="shortcut-tag">Serveurs</span>
+                        </a>
+                        <a href="{% url 'targets' %}" class="shortcut-card shortcut-card-primary">
+                            <div>
+                                <h3>Voir les détails machine</h3>
+                                <p>Ouvrir un serveur pour consulter le dernier scan et l'historique des analyses.</p>
+                            </div>
+                            <span class="shortcut-tag">Serveurs</span>
+                        </a>
+                        <a href="{% url 'vulnerabilities' %}" class="shortcut-card shortcut-card-warning">
+                            <div>
+                                <h3>Voir les CVEs par machine</h3>
+                                <p>Consulter rapidement les vulnérabilités détectées sur le dernier scan de chaque serveur.</p>
+                            </div>
+                            <span class="shortcut-tag">Vulnérabilités</span>
+                        </a>
+                        <a href="{% url 'scans' %}?status=echoue" class="shortcut-card shortcut-card-danger">
+                            <div>
+                                <h3>Scans échoués</h3>
+                                <p>Retrouver rapidement les scans ayant échoué pour identifier les problèmes à corriger.</p>
+                            </div>
+                            <span class="shortcut-tag">Scans</span>
+                        </a>
+                    </div>
+                </article>
+            </section>
+        </section>
+    </main>
+</div>
+
+<script src="{% static 'app_dashboard/js/scans_page.js' %}"></script>
 </body>
 </html>

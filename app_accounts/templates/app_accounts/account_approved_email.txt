@@ -1,0 +1,5 @@
+Bonjour {{ user.username }},
+
+Votre compte sur {{ site_name }} a été validé par l’administrateur.
+
+Vous pouvez maintenant vous connecter à la plateforme.

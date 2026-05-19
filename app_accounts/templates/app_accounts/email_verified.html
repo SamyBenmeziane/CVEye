@@ -4,22 +4,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
     <title>Email vérifié - CVEye</title>
     <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+    <script>try{var t=localStorage.getItem("cveye_theme")||"theme-dark";document.documentElement.classList.add(t)}catch(e){}</script>
 </head>
-<body class="auth-body">
+<body class="auth-body theme-dark">
+    <div class="theme-toggle-bar">
+        <button type="button" id="themeToggleBtn" class="theme-toggle-btn">
+            Basculer en mode clair
+        </button>
+    </div>
     <div class="auth-card">
         {% if already_used %}
             <h1>Lien déjà utilisé</h1>
-            <p>Ce lien a déjà été utilisé. Vous pouvez vous connecter.</p>
+            {% if admin_approved %}
+                <p>Votre adresse email est déjà vérifiée. Vous pouvez vous connecter.</p>
+            {% else %}
+                <p>Votre adresse email est déjà vérifiée. Votre compte reste en attente de validation par l’administrateur.</p>
+            {% endif %}
         {% else %}
-            <h1>Email vérifié</h1>
-            <p>Votre compte a bien été activé.</p>
+            {% if admin_approved %}
+                <h1>Email vérifié</h1>
+                <p>Votre adresse email a bien été confirmée. Votre compte est maintenant actif.</p>
+            {% else %}
+                <h1>Email confirmé</h1>
+                <p>Votre adresse email a bien été vérifiée.</p>
+                <p>Votre compte est maintenant en attente de validation par l’administrateur. Vous recevrez un email dès que votre accès sera autorisé.</p>
+            {% endif %}
         {% endif %}
 
         <p class="auth-link">
             <a href="{% url 'accounts:login' %}">Aller à la connexion</a>
         </p>
     </div>
+    <script src="{% static 'app_dashboard/js/theme.js' %}"></script>
 </body>
 </html>

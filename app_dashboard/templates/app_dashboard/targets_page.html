@@ -1,244 +1,661 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Targets - CVEye</title>
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
+    <title>Serveurs - CVEye</title>
     <link rel="stylesheet" href="{% static 'app_dashboard/css/scans_page.css' %}">
+    <style>
+        .targets-toolbar {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            margin-bottom: 1.5rem;
+        }
+
+        .form-errors {
+            margin-bottom: 1rem;
+            padding: 0.9rem 1rem;
+            border-radius: 14px;
+            background: rgba(153, 27, 27, 0.18);
+            border: 1px solid rgba(248, 113, 113, 0.35);
+            color: #fecaca;
+        }
+
+        .report-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.56);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 1200;
+        }
+
+        .report-modal-backdrop.is-open {
+            display: flex;
+        }
+
+        .report-modal {
+            width: min(680px, 100%);
+            background: #ffffff;
+            border-radius: 24px;
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+            padding: 1.5rem;
+            color: #0f172a;
+        }
+
+        .report-modal-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .report-modal-close {
+            border: none;
+            background: transparent;
+            font-size: 1.8rem;
+            line-height: 1;
+            cursor: pointer;
+            color: #475569;
+        }
+
+        .report-option-list {
+            display: grid;
+            gap: 0.9rem;
+            margin: 1rem 0 1.25rem;
+        }
+
+        .report-option {
+            display: grid;
+            gap: 0.45rem;
+            padding: 1rem 1.1rem;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 16px;
+            background: #f8fafc;
+        }
+
+        .report-option-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+        }
+
+        .report-option p {
+            margin: 0;
+            color: #64748b;
+        }
+
+        .report-count-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.35rem;
+        }
+
+        .report-count-input {
+            width: 92px;
+            min-height: 42px;
+            padding: 0 0.75rem;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            background: #ffffff;
+            color: inherit;
+        }
+
+        .report-summary {
+            display: grid;
+            gap: 0.5rem;
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .report-empty {
+            margin: 1rem 0;
+            color: #64748b;
+        }
+
+    </style>
+    <script>try{if(localStorage.getItem("cveye.theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
 </head>
+
 <body>
-<div class="app-layout sidebar-open" id="appLayout">
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-top">
-            <div class="brand">
-                <div class="brand-logo">[]</div>
-                <div class="brand-text">
-                    <div class="brand-title">CVEye</div>
-                    <div class="brand-subtitle">Security Platform</div>
-                </div>
-            </div>
-        </div>
-
-        <nav class="sidebar-nav">
-            <a href="{% url 'dashboard' %}" class="nav-link">
-                <span class="nav-label">Tableau de bord</span>
-            </a>
-            <a href="{% url 'targets' %}" class="nav-link active">
-                <span class="nav-label">Targets</span>
-            </a>
-            <a href="{% url 'scans' %}" class="nav-link">
-                <span class="nav-label">Scans</span>
-            </a>
-            <a href="#" class="nav-link">
-                <span class="nav-label">Vulnérabilités</span>
-            </a>
-            <a href="#" class="nav-link">
-                <span class="nav-label">Alertes</span>
-            </a>
-            <a href="#" class="nav-link">
-                <span class="nav-label">Rapports</span>
-            </a>
-            <a href="#" class="nav-link">
-                <span class="nav-label">Réglages</span>
-            </a>
-            <a href="{% url 'accounts:logout' %}" class="nav-link">
-                <span class="nav-label">Déconnexion</span>
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <div class="user-avatar">
-                {{ request.user.username|slice:":1"|upper }}
-            </div>
-            <div class="sidebar-user-text">
-                <div class="user-name">{{ request.user.username }}</div>
-                <div class="user-email">{{ request.user.email }}</div>
-            </div>
-        </div>
-    </aside>
-
-    <main class="main-content">
-        <header class="topbar">
-            <div class="topbar-left">
-                <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Ouvrir ou fermer la barre laterale">
-                    ==
-                </button>
-
-                <div class="topbar-search">
-                    <form method="get">
-                        <input type="text" name="q" value="{{ search }}" placeholder="Search targets by address or description...">
-                    </form>
+    <div class="app-layout sidebar-open targets-page-marker" id="appLayout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-top">
+                <div class="sidebar-brand-row">
+                <a href="{% url 'dashboard' %}" class="brand">
+                    <div class="brand-logo">
+                        <img src="{% static 'app_dashboard/img/logo_cveye.png' %}" alt="Logo CVEye"
+                            class="brand-logo-image">
+                    </div>
+                    <div class="brand-text">
+                        <div class="brand-title">CVEye</div>
+                        <div class="brand-subtitle">Monitoring security</div>
+                    </div>
+                </a>
+                    <button type="button" class="sidebar-toggle sidebar-toggle-nav" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
                 </div>
             </div>
 
-            <div class="topbar-right">
-                <div class="system-pill">All Systems Operational</div>
+            <nav class="sidebar-nav" aria-label="Navigation principale">
+                {% if request.user.is_superuser %}
+                <a href="{% url 'admin_console' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M4 19h16M7 16V9m5 7V5m5 11v-4" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Administration</span>
+                </a>
+                <a href="{% url 'targets' %}" class="nav-link active">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" />
+                            <path d="M9 12l2 2 4-4" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Serveurs</span>
+                </a>
+                <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" />
+                            <path d="M12 8v5" />
+                            <path d="M12 17h.01" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Vulnérabilités</span>
+                </a>
+                <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </span>
+                    <span class="nav-label">Recherche de vulnérabilités</span>
+                </a>
+                {% else %}
+                <a href="{% url 'dashboard' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M4 19h16M7 16V9m5 7V5m5 11v-4" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Tableau de bord</span>
+                </a>
+                <a href="{% url 'targets' %}" class="nav-link active">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" />
+                            <path d="M9 12l2 2 4-4" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Serveurs</span>
+                </a>
+                <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" />
+                            <path d="M12 8v5" />
+                            <path d="M12 17h.01" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Vulnérabilités</span>
+                </a>
+                <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </span>
+                    <span class="nav-label">Recherche de vulnérabilités</span>
+                </a>
+                {% endif %}
+            </nav>
 
-                <button type="button" class="topbar-icon" aria-label="Notifications" title="Notifications">
-                    🔔
-                </button>
-
-                <div class="topbar-user" title="{{ request.user.username }}">
+            <div class="sidebar-footer profile-menu-container">
+                <div class="user-avatar">
                     {{ request.user.username|slice:":1"|upper }}
                 </div>
-            </div>
-        </header>
-
-        <section class="page-content">
-            <div class="page-header">
-                <div>
-                    <h1>Targets</h1>
-                    <p>
-                        {% if targets %}
-                            {{ targets|length }} cible{{ targets|length|pluralize }} enregistrée{{ targets|length|pluralize }}
-                        {% else %}
-                            Aucune cible enregistrée pour le moment
-                        {% endif %}
-                    </p>
+                <button type="button" class="sidebar-user-button" id="profileMenuToggle" aria-expanded="false">
+                    <div class="sidebar-user-text">
+                        <div class="user-name">{{ request.user.username }}</div>
+                        <div class="user-email">{{ request.user.email|default:"Compte connecté" }}</div>
+                    </div>
+                    <span class="profile-menu-caret">+</span>
+                </button>
+                <div class="profile-menu" id="profileMenu">
+                    <a href="{% url 'accounts:settings' %}" class="profile-menu-link"><span
+                            class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg">
+                                <path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" />
+                                <path
+                                    d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.2 1.2a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.8a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.7-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0L4.3 18a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H3.5a1 1 0 0 1-1-1v-1.8a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.7 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h1.8a1 1 0 0 1 1 1v.2a1 1 0 0 0 .7.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.2 1.2a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v1.8a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.7Z" />
+                            </svg></span><span>Réglages</span></a>
+                    <a href="{% url 'accounts:logout' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg
+                                viewBox="0 0 24 24" class="menu-icon-svg">
+                                <path d="M10 17l5-5-5-5" />
+                                <path d="M15 12H4" />
+                                <path d="M20 4v16" />
+                            </svg></span><span>Déconnexion</span></a>
                 </div>
             </div>
+        </aside>
 
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert {% if message.tags == 'error' %}error{% else %}success{% endif %}">
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button type="button" class="sidebar-toggle sidebar-toggle-mobile" data-sidebar-toggle
+                        aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+
+                    <div class="page-intro">
+                        <p class="eyebrow">Inventaire</p>
+                        <h1>Serveurs</h1>
+                    </div>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="system-pill">Suivi centralisé</div>
+                    <a href="{% url 'vulnerabilities' %}" class="details-btn">Vue vulnérabilités</a>
+                </div>
+            </header>
+
+            <section class="page-content">
+                <div class="section-head section-head-spaced">
+                    <div>
+                        <p class="eyebrow">Gestion des serveurs</p>
+                        <h2>Ajouter, filtrer et suivre vos serveurs</h2>
+                        <p class="section-copy">
+                            {% if targets %}
+                            {{ targets|length }} serveur{{ targets|length|pluralize }} enregistré{{ targets|length|pluralize }}
+                            {% else %}
+                            Aucun serveur enregistré pour le moment
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                {% if messages %}
+                <div class="toast-stack">
+                    {% for message in messages %}
+                    <div
+                        class="alert toast {% if message.tags == 'error' %}error{% elif message.tags == 'succèss' %}succèss{% else %}warning{% endif %}">
                         {{ message }}
                     </div>
-                {% endfor %}
-            {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="toast-stack toast-stack-live" id="liveScanToastStack" aria-live="polite" aria-atomic="false"></div>
 
-            <div class="table-card" style="margin-bottom: 20px;">
-                <h3 style="margin-bottom: 16px;">Ajouter une cible</h3>
+                <div class="targets-toolbar">
+                    <article class="panel-card">
+                        <div class="section-head">
+                            <div>
+                                <p class="eyebrow">Nouveau serveur</p>
+                                <h2>Ajouter un serveur</h2>
+                            </div>
+                        </div>
 
-                <form method="post" style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
-                    {% csrf_token %}
+                        {% if form.non_field_errors %}
+                        <div class="form-errors">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
 
-                    <div>
-                        <label for="{{ form.adresse.id_for_label }}">Adresse</label>
-                        {{ form.adresse }}
-                        {% for error in form.adresse.errors %}
+                        <form method="post" class="modern-form">
+                            {% csrf_token %}
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label for="{{ form.adresse.id_for_label }}">Adresse</label>
+                                    {{ form.adresse }}
+                                    {% for error in form.adresse.errors %}
+                                    <small class="field-error">{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="form-field">
+                                    <label for="{{ form.type_cible.id_for_label }}">Type</label>
+                                    {{ form.type_cible }}
+                                    {% for error in form.type_cible.errors %}
+                                    <small class="field-error">{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="form-field form-field-full">
+                                    <label for="{{ form.description.id_for_label }}">Description</label>
+                                    {{ form.description }}
+                                    {% for error in form.description.errors %}
+                                    <small class="field-error">{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+
+                                <label class="toggle-field">
+                                    {{ form.active }}
+                                    <span>Serveur actif</span>
+                                </label>
+
+                                <label class="toggle-field">
+                                    {{ form.surveillance_active }}
+                                    <span>Activer la surveillance</span>
+                                </label>
+
+                                <div class="form-field form-field-full">
+                                    <label for="{{ form.periodicite_scan.id_for_label }}">Périodicité du scan</label>
+                                    {{ form.periodicite_scan }}
+                                    {% for error in form.periodicite_scan.errors %}
+                                    <small class="field-error">{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            {% for error in form.non_field_errors %}
                             <small class="field-error">{{ error }}</small>
-                        {% endfor %}
+                            {% endfor %}
+
+                            <div class="form-actions">
+                                <button type="submit" class="primary-btn">Ajouter le serveur</button>
+                            </div>
+                        </form>
+                    </article>
+
+                    <article class="panel-card">
+                        <div class="section-head">
+                            <div>
+                                <p class="eyebrow">Recherche</p>
+                                <h2>Filtrer les serveurs</h2>
+                            </div>
+                        </div>
+
+                        <form method="get" class="modern-form compact-form">
+                            <div class="form-grid">
+                                <div class="form-field form-field-full">
+                                    <label for="target-search">Nom ou description</label>
+                                    <input id="target-search" type="text" name="q" value="{{ search }}" placeholder="Ex: metasploitable ou 192.168.1.10">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="primary-btn">Rechercher</button>
+                                {% if search %}
+                                <a href="{% url 'targets' %}" class="details-btn">Réinitialiser</a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </article>
+                </div>
+
+                <article class="panel-card">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Suivi opérationnel</p>
+                            <h2>Liste des serveurs</h2>
+                        </div>
                     </div>
 
-                    <div>
-                        <label for="{{ form.type_cible.id_for_label }}">Type</label>
-                        {{ form.type_cible }}
-                        {% for error in form.type_cible.errors %}
-                            <small class="field-error">{{ error }}</small>
-                        {% endfor %}
+                    <div class="quick-filter-row">
+                        <button type="button" class="quick-filter-chip is-active target-filter-chip" data-target-filter="">Toutes</button>
+                        <button type="button" class="quick-filter-chip target-filter-chip" data-target-filter="Critique">Critique</button>
+                        <button type="button" class="quick-filter-chip target-filter-chip" data-target-filter="Élevé">Élevée</button>
+                        <button type="button" class="quick-filter-chip target-filter-chip" data-target-filter="Moyen">Moyenne</button>
+                        <button type="button" class="quick-filter-chip target-filter-chip" data-target-filter="no-scan">Sans scan</button>
                     </div>
 
-                    <div style="grid-column: 1 / -1;">
-                        <label for="{{ form.description.id_for_label }}">Description</label>
-                        {{ form.description }}
-                        {% for error in form.description.errors %}
-                            <small class="field-error">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        {{ form.active }}
-                        <label for="{{ form.active.id_for_label }}">Cible active</label>
-                    </div>
-
-                    <div style="grid-column: 1 / -1;">
-                        <button type="submit" class="primary-btn">Ajouter la cible</button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="table-card">
-                <table class="scan-table">
-                    <thead>
-                    <tr>
-                        <th>TARGET</th>
-                        <th>TYPE</th>
-                        <th>STATUT</th>
-                        <th>DERNIER SCAN</th>
-                        <th>NIVEAU DE RISQUE</th>
-                        <th>DÉTAILS</th>
-                        <th class="th-right">ACTIONS</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% if targets %}
-                        {% for target in targets %}
-                            <tr>
-                                <td>
-                                    <div class="target-cell">
-                                        <div class="target-icon">[]</div>
-                                        <div>
-                                            <div class="target-name">{{ target.adresse }}</div>
-                                            <div class="target-sub">{{ target.description|default:"Aucune description" }}</div>
+                    <div class="table-card">
+                        <table class="scan-table">
+                            <thead>
+                                <tr>
+                                    <th>Serveur</th>
+                                    <th>Type</th>
+                                    <th>Statut</th>
+                                    <th>Risque</th>
+                                    <th>Details</th>
+                                    <th class="th-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if targets %}
+                                {% for target in targets %}
+                                <tr data-target-risk="{{ target.risk_label }}" data-target-has-scan="{% if target.scan_count %}true{% else %}false{% endif %}">
+                                    <td data-label="Serveur">
+                                        <div class="target-cell">
+                                            <div class="target-icon">TG</div>
+                                            <div>
+                                                <div class="target-name">
+                                                    <a href="{% url 'target_detail' target.id %}" class="details-btn">
+                                                        {{ target.adresse }}
+                                                    </a>
+                                                </div>
+                                                <div class="target-sub">{{ target.description|default:"Aucune description"|striptags|truncatechars:90 }}</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </td>
+                                    </td>
 
-                                <td>{{ target.type_cible|title }}</td>
+                                    <td data-label="Type">{{ target.type_cible|title }}</td>
 
-                                <td>
-                                    {% if target.display_status == "Online" %}
-                                        <span class="status-badge completed">Online</span>
-                                    {% elif target.display_status == "Warning" %}
-                                        <span class="status-badge neutral">Warning</span>
-                                    {% else %}
-                                        <span class="status-badge failed">Offline</span>
-                                    {% endif %}
-                                </td>
+                                    <td data-label="Statut">
+                                        {% if target.display_status == "En ligne" %}
+                                        <span class="status-badge completed">En ligne</span>
+                                        {% elif target.display_status == "Critique" %}
+                                        <span class="status-badge info">Critique</span>
+                                        {% elif target.display_status == "Désactivée" %}
+                                        <span class="status-badge neutral">Désactivée</span>
+                                        {% else %}
+                                        <span class="status-badge failed">Hors ligne</span>
+                                        {% endif %}
+                                    </td>
 
-                                <td>
-                                    {% if target.last_scan_date %}
-                                        <div class="cell-main">{{ target.last_scan_date|date:"Y-m-d H:i:s" }}</div>
-                                    {% else %}
-                                        <div class="cell-main">Jamais</div>
-                                    {% endif %}
-                                </td>
-
-                                <td>
-                                    {% if target.risk_label == "Critique" or target.risk_label == "Élevé" %}
+                                    <td data-label="Risque">
+                                        {% if target.risk_label == "Critique" or target.risk_label == "Élevé" %}
                                         <span class="result-red">{{ target.risk_label }}</span>
-                                    {% else %}
+                                        {% else %}
                                         <span class="result-blue">{{ target.risk_label }}</span>
-                                    {% endif %}
-                                </td>
+                                        {% endif %}
+                                    </td>
 
-                                <td>
-                                    <div class="result-line">
-                                        Services:
-                                        <span class="result-blue">{{ target.service_count }}</span>
-                                    </div>
-                                    <div class="result-line">
-                                        Vulnerabilities:
-                                        <span class="result-red">{{ target.vulnerability_count }}</span>
-                                    </div>
-                                </td>
+                                    <td data-label="Details">
+                                        <div class="result-line">
+                                            Services: <span class="result-blue">{{ target.service_count }}</span>
+                                        </div>
+                                        <div class="result-line">
+                                            Vulnérabilités: <a href="{% url 'vulnerabilities' %}?target={{ target.id }}" class="result-red">{{ target.vulnerability_count|default:0 }}</a>
+                                        </div>
+                                    </td>
 
-                                <td class="th-right">
-                                    <div style="display:flex; gap:8px; justify-content:flex-end;">
-    <form method="post" action="{% url 'launch_target_scan' target.id %}">
-        {% csrf_token %}
-        <button type="submit" class="details-btn">Lancer scan</button>
-    </form>
-    <a href="{% url 'scans' %}?target={{ target.id }}" class="details-btn">Voir scans</a>
-</div>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="7" class="empty-row">
-                                Aucune cible enregistrée.
-                            </td>
-                        </tr>
-                    {% endif %}
-                    </tbody>
-                </table>
+                                    <td data-label="Actions" class="th-right">
+                                        <div class="action-row">
+                                            <form method="post"
+                                                action="{% url 'launch_target_scan_async' target.id %}"
+                                                class="launch-scan-form">
+                                                {% csrf_token %}
+                                                <button type="submit"
+                                                    class="details-btn action-icon-btn launch-scan-btn"
+                                                    title="Lancer scan"
+                                                    aria-label="Lancer scan">&#9654;</button>
+                                            </form>
+
+                                            <a href="{% url 'edit_target' target.id %}"
+                                                class="details-btn action-icon-btn" title="Modifier">&#9998;</a>
+
+                                            <form method="post" action="{% url 'delete_target' target.id %}"
+                                                onsubmit="return confirm('Supprimer ce serveur ?');">
+                                                {% csrf_token %}
+                                                <button type="submit"
+                                                    class="details-btn details-btn-danger action-icon-btn"
+                                                    title="Supprimer">&#128465;</button>
+                                            </form>
+
+                                            <a href="{% url 'vulnerabilities' %}?target={{ target.id }}"
+                                                class="details-btn details-btn-danger action-icon-btn"
+                                                title="Voir vulnerabilities">&#9888;</a>
+
+                                            <a href="{% url 'target_detail' target.id %}"
+                                                class="details-btn action-icon-btn"
+                                                title="Voir les scans">&#128269;</a>
+
+                                            <button type="button"
+                                                class="details-btn action-icon-btn"
+                                                title="Télécharger un rapport PDF"
+                                                data-report-target="{{ target.adresse }}"
+                                                data-report-count="{{ target.scan_count }}"
+                                                data-report-action="{% url 'download_target_report_pdf' target.id %}"
+                                                onclick="openTargetReportModal(this)">&#128229;</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="empty-row">Aucun serveur enregistré.</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
+    <div class="report-modal-backdrop" id="reportModalBackdrop" aria-hidden="true">
+        <div class="report-modal" role="dialog" aria-modal="true" aria-labelledby="reportModalTitle">
+            <div class="report-modal-head">
+                <div>
+                    <p class="eyebrow">Rapport PDF</p>
+                    <h2 id="reportModalTitle">Choisir le contenu du rapport</h2>
+                </div>
+                <button type="button" class="report-modal-close" id="reportModalClose" aria-label="Fermer">&times;</button>
             </div>
-        </section>
-    </main>
-</div>
 
-<script src="{% static 'app_dashboard/js/scans_page.js' %}"></script>
+            <div class="report-summary">
+                <span id="reportModalTarget"></span>
+                <span id="reportModalCount"></span>
+            </div>
+
+            <form method="post" id="reportModalForm" class="modern-form" data-skip-loading="true">
+                {% csrf_token %}
+                <div class="report-option-list">
+                    <label class="report-option">
+                        <div class="report-option-header">
+                            <input type="radio" name="report_scope" value="latest" checked>
+                            <span>Dernier scan</span>
+                        </div>
+                        <p>Option par défaut. Génère un rapport à partir du scan le plus récent.</p>
+                    </label>
+
+                    <label class="report-option">
+                        <div class="report-option-header">
+                            <input type="radio" name="report_scope" value="all">
+                            <span>Tous les scans</span>
+                        </div>
+                        <p>Inclut tout l'historique disponible pour cette machine.</p>
+                    </label>
+
+                    <label class="report-option">
+                        <div class="report-option-header">
+                            <input type="radio" name="report_scope" value="count">
+                            <span>N scans</span>
+                        </div>
+                        <p>Permet de choisir un nombre précis de scans récents à inclure.</p>
+                        <div class="report-count-row">
+                            <label for="reportModalCountInput">Nombre de scans</label>
+                            <input id="reportModalCountInput" class="report-count-input" type="number" name="count" min="1" max="1" value="1" disabled>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="report-empty" id="reportModalEmpty" hidden>
+                    Aucun scan disponible pour ce serveur.
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn" id="reportModalSubmit">
+                        Télécharger le rapport
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="{% static 'app_dashboard/js/scans_page.js' %}"></script>
+    <script>
+        const reportModalBackdrop = document.getElementById('reportModalBackdrop');
+        const reportModalClose = document.getElementById('reportModalClose');
+        const reportModalForm = document.getElementById('reportModalForm');
+        const reportModalTarget = document.getElementById('reportModalTarget');
+        const reportModalCount = document.getElementById('reportModalCount');
+        const reportModalCountInput = document.getElementById('reportModalCountInput');
+        const reportModalSubmit = document.getElementById('reportModalSubmit');
+        const reportModalEmpty = document.getElementById('reportModalEmpty');
+        const reportScopeInputs = reportModalForm ? reportModalForm.querySelectorAll('input[name="report_scope"]') : [];
+
+        function syncReportCountState() {
+            if (!reportModalCountInput) {
+                return;
+            }
+
+            const selectedScope = reportModalForm.querySelector('input[name="report_scope"]:checked');
+            reportModalCountInput.disabled = !selectedScope || selectedScope.value !== 'count';
+        }
+
+        function closeTargetReportModal() {
+            reportModalBackdrop.classList.remove('is-open');
+            reportModalBackdrop.setAttribute('aria-hidden', 'true');
+        }
+
+        function openTargetReportModal(button) {
+            const targetLabel = button.dataset.reportTarget || 'Machine';
+            const scanCount = Number(button.dataset.reportCount || '0');
+            const formAction = button.dataset.reportAction || '';
+
+            reportModalForm.action = formAction;
+            reportModalTarget.textContent = `Machine : ${targetLabel}`;
+            reportModalCount.textContent = `Nombre total de scans disponibles : ${scanCount}`;
+            reportModalCountInput.max = String(Math.max(scanCount, 1));
+            reportModalCountInput.value = String(Math.min(Math.max(scanCount, 1), 3));
+            reportModalSubmit.disabled = scanCount === 0;
+            reportModalEmpty.hidden = scanCount !== 0;
+            reportScopeInputs.forEach((input) => {
+                input.checked = input.value === 'latest';
+            });
+            syncReportCountState();
+
+            reportModalBackdrop.classList.add('is-open');
+            reportModalBackdrop.setAttribute('aria-hidden', 'false');
+        }
+
+        reportScopeInputs.forEach((input) => {
+            input.addEventListener('change', syncReportCountState);
+        });
+
+        if (reportModalClose) {
+            reportModalClose.addEventListener('click', closeTargetReportModal);
+        }
+
+        if (reportModalBackdrop) {
+            reportModalBackdrop.addEventListener('click', (event) => {
+                if (event.target === reportModalBackdrop) {
+                    closeTargetReportModal();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && reportModalBackdrop.classList.contains('is-open')) {
+                closeTargetReportModal();
+            }
+        });
+    </script>
 </body>
+
 </html>
+

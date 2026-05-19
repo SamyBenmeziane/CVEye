@@ -4,10 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
     <title>Email envoyé - CVEye</title>
     <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/loading_overlay.css' %}">
+    <script>try{var t=localStorage.getItem("cveye_theme")||"theme-dark";document.documentElement.classList.add(t)}catch(e){}</script>
 </head>
-<body class="auth-body">
+<body class="auth-body theme-dark">
+    <div class="theme-toggle-bar">
+        <button type="button" id="themeToggleBtn" class="theme-toggle-btn">
+            Basculer en mode clair
+        </button>
+    </div>
     <div class="auth-card">
         <h1>Vérifiez votre email</h1>
 
@@ -24,19 +32,21 @@
         </p>
 
         <p style="margin-bottom: 18px;">
-            Vous devez confirmer votre adresse email avant de pouvoir vous connecter.
-            Pensez aussi à vérifier vos courriers indésirables.
+            Vous devez d’abord confirmer votre adresse email. Une fois le lien cliqué, votre compte
+            restera en attente de validation par l’administrateur avant votre première connexion.
         </p>
 
         <form method="post" action="{% url 'accounts:resend_verification' %}">
             {% csrf_token %}
             <input type="hidden" name="username" value="{{ username }}">
-            <button type="submit" class="auth-btn">Renvoyer l'email</button>
+            <button type="submit" class="auth-btn" data-loading-message="Envoi du mail en cours...">Renvoyer l’email</button>
         </form>
 
         <p class="auth-link" style="margin-top: 18px;">
             <a href="{% url 'accounts:login' %}">Retour à la connexion</a>
         </p>
     </div>
+    <script src="{% static 'app_dashboard/js/loading_overlay.js' %}"></script>
+    <script src="{% static 'app_dashboard/js/theme.js' %}"></script>
 </body>
 </html>

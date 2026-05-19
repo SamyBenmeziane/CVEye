@@ -121,33 +121,43 @@ Executez
 
 ##  Configuration environnement (.env)
 
-Créer un fichier dans le dossier du projet, à côté de manage.py :
+Un fichier `.env.example` est fourni à la racine du projet : il liste toutes les variables d'environnement requises avec des commentaires explicatifs.
 
-```bash
-New-Item .env
-@"
-DB_NAME=cveye_db
-DB_USER=cveye_user
-DB_PASSWORD=TON_MDP
-DB_HOST=127.0.0.1
-DB_PORT=5432
-"@ | Set-Content -Encoding utf8 .env
-```
-```
-.env
+### Étape 1 — Copier le template
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-Contenu :
+### Étape 2 — Remplir les valeurs réelles
+
+Édite le fichier `.env` ainsi créé et remplis :
 
 ```env
+# Base de données PostgreSQL
 DB_NAME=cveye_db
 DB_USER=postgres
-DB_PASSWORD=YOUR_PASSWORD
-DB_HOST=localhost
+DB_PASSWORD=ton_mot_de_passe_postgres
+DB_HOST=127.0.0.1
 DB_PORT=5432
+
+# Sécurité Django
+DJANGO_SECRET_KEY=remplacer_par_une_cle_aleatoire
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
 ```
 
- Ce fichier ne doit **jamais** être commit.
+### Étape 3 — Générer une SECRET_KEY aléatoire
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(64))"
+```
+
+Copie la sortie dans la variable `DJANGO_SECRET_KEY` du `.env`.
+
+> ⚠️ Ce fichier `.env` ne doit **jamais** être committé sur SVN. Seul `.env.example` (sans secrets) est versionné.
+
+> 🚀 **Sur le serveur de production**, mettre `DJANGO_DEBUG=False` et adapter `DJANGO_ALLOWED_HOSTS` aux vrais domaines (ex. `cveye.ovh,www.cveye.ovh`).
 
 
 ---
@@ -208,6 +218,67 @@ Admin :
 ```
 http://127.0.0.1:8888/admin
 ```
+
+---
+
+##  Lancer les tests
+
+Le projet contient une suite de tests unitaires couvrant la validation des cibles, le scanner réseau, la corrélation CVE, l'authentification et le système de ban d'IP.
+
+### Lancer tous les tests
+
+```bash
+python manage.py test
+```
+
+### Lancer les tests d'une seule app
+
+```bash
+python manage.py test app_core            # tests sur Cible / Scan / Service
+python manage.py test app_scan            # tests sur SocketScanner et CPE
+python manage.py test app_security        # tests sur NVDClient
+python manage.py test app_dashboard       # tests sur risk_utils et la page Vulnérabilités
+python manage.py test app_accounts        # tests sur l'authentification et le ban d'IP
+```
+
+### Mode verbeux (affiche le nom et la docstring de chaque test)
+
+```bash
+python manage.py test --verbosity 2
+```
+
+> 📋 Tous les tests doivent être verts avant de pousser un commit. Si un test échoue, corrige le bug ou adapte le test avant de committer.
+
+---
+
+##  Données de test (seed)
+
+Pour développer ou tester l'interface sans avoir à scanner de vraies machines, le projet inclut un script qui peuple ta BD locale avec **8 cibles fictives** couvrant tous les cas d'affichage de la page Vulnérabilités.
+
+### Lancer le seed
+
+```bash
+python seed_data.py
+```
+
+### Cas générés
+
+| # | Cible | Cas testé |
+|---|-------|-----------|
+| 1 | 10.0.0.1 | Jamais scannée |
+| 2 | 10.0.0.2 | Scan complet, 0 CVE |
+| 3 | 10.0.0.3 | 2 CVE Faibles |
+| 4 | 10.0.0.4 | 2 Moyennes + 1 Faible |
+| 5 | 10.0.0.5 | 2 Élevées + 1 Moyenne |
+| 6 | 10.0.0.6 | 2 Critiques + 1 Élevée + 1 Faible |
+| 7 | 10.0.0.7 | Hors ligne (server_hs) |
+| 8 | test.exemple.fr | Domaine, 2 Critiques + 1 Élevée + 1 Moyenne |
+
+**Total** : 16 vulnérabilités, 9 services, 8 cibles attribuées au superuser local.
+
+> ♻️ Le script est **idempotent** : tu peux le relancer plusieurs fois sans dupliquer les données. Il supprime ses propres entrées (reconnaissables au préfixe `[SEED]` dans la description) avant de les recréer.
+
+> ⚠️ Pré-requis : un superuser doit exister dans la BD (`python manage.py createsuperuser`). Les cibles seront attribuées à ce superuser.
 
 ---
 

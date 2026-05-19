@@ -1,0 +1,197 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
+    <title>Réglages - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/scans_page.css' %}">
+    <script>try{if(localStorage.getItem("cveye.theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
+</head>
+<body>
+<div class="app-layout sidebar-open" id="appLayout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+            <a href="{% url 'dashboard' %}" class="brand">
+                <div class="brand-logo">
+                    <img src="{% static 'app_dashboard/img/logo_cveye.png' %}" alt="Logo CVEye" class="brand-logo-image">
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title">CVEye</div>
+                    <div class="brand-subtitle">Monitoring security</div>
+                </div>
+            </a>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Navigation principale">
+            {% if request.user.is_superuser %}
+            <a href="{% url 'admin_console' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
+                <span class="nav-label">Administration</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
+            </a>
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            {% else %}
+            <a href="{% url 'dashboard' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
+                <span class="nav-label">Tableau de bord</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
+            </a>
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer profile-menu-container">
+            <div class="user-avatar">
+                {{ request.user.username|slice:":1"|upper }}
+            </div>
+            <button type="button" class="sidebar-user-button" id="profileMenuToggle" aria-expanded="true">
+                <div class="sidebar-user-text">
+                    <div class="user-name">{{ request.user.username }}</div>
+                    <div class="user-email">{{ request.user.email|default:"Compte connecté" }}</div>
+                </div>
+                <span class="profile-menu-caret">+</span>
+            </button>
+            <div class="profile-menu profile-menu-open" id="profileMenu">
+                <a href="{% url 'accounts:settings' %}" class="profile-menu-link active"><span class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" /><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.2 1.2a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.8a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.7-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0L4.3 18a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H3.5a1 1 0 0 1-1-1v-1.8a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.7 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h1.8a1 1 0 0 1 1 1v.2a1 1 0 0 0 .7.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.2 1.2a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v1.8a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.7Z" /></svg></span><span>Réglages</span></a>
+                <a href="{% url 'accounts:logout' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg"><path d="M10 17l5-5-5-5" /><path d="M15 12H4" /><path d="M20 4v16" /></svg></span><span>Déconnexion</span></a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <div class="page-intro">
+                    <p class="eyebrow">Compte</p>
+                    <h1>Réglages utilisateur</h1>
+                </div>
+            </div>
+        </header>
+
+        <section class="page-content">
+            {% if messages %}
+                <div class="toast-stack">
+                    {% for message in messages %}
+                        <div class="alert toast {% if message.tags == 'error' %}error{% else %}succèss{% endif %}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <section class="content-grid targets-grid">
+                <article class="panel-card">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Profil</p>
+                            <h2>Identite</h2>
+                        </div>
+                    </div>
+
+                    <form method="post" class="modern-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="profile">
+                        <div class="form-field">
+                            <label for="{{ profile_form.first_name.id_for_label }}">Prenom</label>
+                            {{ profile_form.first_name }}
+                            {% for error in profile_form.first_name.errors %}
+                                <small class="field-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ profile_form.last_name.id_for_label }}">Nom</label>
+                            {{ profile_form.last_name }}
+                            {% for error in profile_form.last_name.errors %}
+                                <small class="field-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        <div class="form-field">
+                            <label>Nom d'utilisateur actuel</label>
+                            <input type="text" value="{{ request.user.username }}" disabled>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="primary-btn">Enregistrer</button>
+                        </div>
+                    </form>
+                </article>
+
+                <article class="panel-card">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Sécurité</p>
+                            <h2>Mot de passe</h2>
+                        </div>
+                    </div>
+
+                    <form method="post" class="modern-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="password">
+                        <div class="form-field">
+                            <label for="{{ password_form.old_password.id_for_label }}">Mot de passe actuel</label>
+                            {{ password_form.old_password }}
+                            {% for error in password_form.old_password.errors %}
+                                <small class="field-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ password_form.new_password1.id_for_label }}">Nouveau mot de passe</label>
+                            {{ password_form.new_password1 }}
+                            {% for error in password_form.new_password1.errors %}
+                                <small class="field-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ password_form.new_password2.id_for_label }}">Confirmation</label>
+                            {{ password_form.new_password2 }}
+                            {% for error in password_form.new_password2.errors %}
+                                <small class="field-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% for error in password_form.non_field_errors %}
+                            <small class="field-error">{{ error }}</small>
+                        {% endfor %}
+                        <div class="form-actions">
+                            <button type="submit" class="primary-btn">Mettre à jour</button>
+                        </div>
+                    </form>
+                </article>
+            </section>
+        </section>
+    </main>
+</div>
+
+<script src="{% static 'app_dashboard/js/scans_page.js' %}"></script>
+</body>
+</html>
+
+

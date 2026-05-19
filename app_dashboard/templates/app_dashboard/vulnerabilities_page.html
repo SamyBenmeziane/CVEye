@@ -1,0 +1,397 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
+    <title>Vulnérabilités - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/scans_page.css' %}">
+    <script>try{if(localStorage.getItem("cveye.theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
+</head>
+
+<body>
+    <div class="app-layout sidebar-open vulnerabilities-page-marker" id="appLayout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-top">
+                <div class="sidebar-brand-row">
+                <a href="{% url 'dashboard' %}" class="brand">
+                    <div class="brand-logo">
+                        <img src="{% static 'app_dashboard/img/logo_cveye.png' %}" alt="Logo CVEye"
+                            class="brand-logo-image">
+                    </div>
+                    <div class="brand-text">
+                        <div class="brand-title">CVEye</div>
+                        <div class="brand-subtitle">Monitoring security</div>
+                    </div>
+                </a>
+                    <button type="button" class="sidebar-toggle sidebar-toggle-nav" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Navigation principale">
+                {% if request.user.is_superuser %}
+                <a href="{% url 'admin_console' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M4 19h16M7 16V9m5 7V5m5 11v-4" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Administration</span>
+                </a>
+                <a href="{% url 'targets' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" />
+                            <path d="M9 12l2 2 4-4" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Serveurs</span>
+                </a>
+                <a href="{% url 'vulnerabilities' %}" class="nav-link active">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" />
+                            <path d="M12 8v5" />
+                            <path d="M12 17h.01" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Vulnérabilités</span>
+                </a>
+                <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </span>
+                    <span class="nav-label">Recherche de vulnérabilités</span>
+                </a>
+                {% else %}
+                <a href="{% url 'dashboard' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M4 19h16M7 16V9m5 7V5m5 11v-4" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Tableau de bord</span>
+                </a>
+                <a href="{% url 'targets' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" />
+                            <path d="M9 12l2 2 4-4" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Serveurs</span>
+                </a>
+                <a href="{% url 'vulnerabilities' %}" class="nav-link active">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg">
+                            <path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" />
+                            <path d="M12 8v5" />
+                            <path d="M12 17h.01" />
+                        </svg>
+                    </span>
+                    <span class="nav-label">Vulnérabilités</span>
+                </a>
+                <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                    <span class="nav-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </span>
+                    <span class="nav-label">Recherche de vulnérabilités</span>
+                </a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer profile-menu-container">
+                <div class="user-avatar">
+                    {{ request.user.username|slice:":1"|upper }}
+                </div>
+                <button type="button" class="sidebar-user-button" id="profileMenuToggle" aria-expanded="false">
+                    <div class="sidebar-user-text">
+                        <div class="user-name">{{ request.user.username }}</div>
+                        <div class="user-email">{{ request.user.email|default:"Compte connecté" }}</div>
+                    </div>
+                    <span class="profile-menu-caret">+</span>
+                </button>
+                <div class="profile-menu" id="profileMenu">
+                    <a href="{% url 'accounts:settings' %}" class="profile-menu-link"><span
+                            class="profile-menu-icon"><svg viewBox="0 0 24 24" class="menu-icon-svg">
+                                <path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" />
+                                <path
+                                    d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.2 1.2a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.8a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.7-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0L4.3 18a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H3.5a1 1 0 0 1-1-1v-1.8a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.7 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h1.8a1 1 0 0 1 1 1v.2a1 1 0 0 0 .7.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.2 1.2a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v1.8a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.7Z" />
+                            </svg></span><span>Réglages</span></a>
+                    <a href="{% url 'accounts:logout' %}" class="profile-menu-link"><span class="profile-menu-icon"><svg
+                                viewBox="0 0 24 24" class="menu-icon-svg">
+                                <path d="M10 17l5-5-5-5" />
+                                <path d="M15 12H4" />
+                                <path d="M20 4v16" />
+                            </svg></span><span>Déconnexion</span></a>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button type="button" class="sidebar-toggle sidebar-toggle-mobile" data-sidebar-toggle
+                        aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+
+                    <div class="page-intro">
+                        <p class="eyebrow">Exposition</p>
+                        <h1>Vulnérabilités</h1>
+                    </div>
+                </div>
+
+            <div class="topbar-right">
+                <div class="system-pill">Dernier scan termine</div>
+                <a href="{% url 'vulnerabilities_search' %}" class="details-btn">
+                    Recherche de vulnérabilités
+                </a>
+                <a href="{% url 'targets' %}" class="details-btn">Voir les serveurs</a>
+            </div>
+            </header>
+
+            <section class="page-content">
+                <div class="section-head section-head-spaced">
+                    <div>
+                        <p class="eyebrow">Vue par machine</p>
+                        <h2>Vulnérabilités détectées sur chaque serveur</h2>
+                        <p class="section-copy">
+                            Cette page affiche les vulnerabilites du dernier scan termine pour chaque machine afin
+                            d'eviter les doublons historiques.
+                        </p>
+                    </div>
+                </div>
+
+                <section class="metrics-grid">
+                    <a href="{% url 'vulnerabilities' %}" class="metric-card metric-card-link metric-card-success {% if not selected_severity and not selected_exposed %}metric-card-active{% endif %}">
+                        <p class="metric-label">Machines affichees</p>
+                        <h3>{{ total_machines }}</h3>
+                        <p class="metric-meta">Serveurs retenus apres filtrage</p>
+                    </a>
+
+                    <a href="{% url 'vulnerabilities' %}?exposed=1" class="metric-card metric-card-link metric-card-primary {% if selected_exposed %}metric-card-active{% endif %}">
+                        <p class="metric-label">Machines exposees</p>
+                        <h3>{{ machines_with_vulnerabilities }}</h3>
+                        <p class="metric-meta">Au moins une CVE detectee</p>
+                    </a>
+
+                    <a href="{% url 'vulnerabilities' %}?severity=Critique" class="metric-card metric-card-link metric-card-danger {% if selected_severity == 'Critique' %}metric-card-active{% endif %}">
+                        <p class="metric-label">Machines critiques</p>
+                        <h3>{{ critical_machines }}</h3>
+                        <p class="metric-meta">{% if top_exposed_service %}Service le plus exposé: {{ top_exposed_service|title }}{% else %}Au moins une CVE critique{% endif %}</p>
+                    </a>
+
+                    <a href="#appLayout" class="metric-card metric-card-alert metric-card-link metric-card-danger">
+                        <p class="metric-label">Vulnérabilités</p>
+                        <h3>{{ total_vulnerabilities }}</h3>
+                        <p class="metric-meta">Occurrences visibles sur la page</p>
+                    </a>
+                </section>
+
+                <article class="panel-card">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Filtres</p>
+                            <h2>Affiner la liste</h2>
+                        </div>
+                    </div>
+
+                    <form method="get" class="modern-form compact-form">
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label for="target-filter">Filtrer par serveur</label>
+                                <select id="target-filter" name="target">
+                                    <option value="">Tous les serveurs</option>
+                                    {% for target in targets %}
+                                    <option value="{{ target.id }}" {% if selected_target_id == target.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ target.adresse }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="severity-filter">Filtrer par severite</label>
+                                <select id="severity-filter" name="severity">
+                                    <option value="">Toutes les severites</option>
+                                    <option value="Critique" {% if selected_severity == "Critique" %}selected{% endif %}>
+                                        Critique
+                                    </option>
+                                    <option value="Élevée" {% if selected_severity == "Élevée" %}selected{% endif %}>
+                                        Élevée
+                                    </option>
+                                    <option value="Moyenne" {% if selected_severity == "Moyenne" %}selected{% endif %}>
+                                        Moyenne
+                                    </option>
+                                    <option value="Faible" {% if selected_severity == "Faible" %}selected{% endif %}>
+                                        Faible
+                                    </option>
+                                    <option value="Inconnue" {% if selected_severity == "Inconnue" %}selected{% endif %}>
+                                        Inconnue
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="primary-btn">Filtrer</button>
+                            <a href="{% url 'vulnerabilities' %}" class="details-btn">Réinitialiser</a>
+                        </div>
+                    </form>
+
+                    <div class="quick-filter-row">
+                        <a href="{% url 'vulnerabilities' %}?severity=Critique{% if selected_target_id %}&target={{ selected_target_id }}{% endif %}" class="quick-filter-chip {% if selected_severity == 'Critique' %}is-active{% endif %}">Critique</a>
+                        <a href="{% url 'vulnerabilities' %}?severity=Élevée{% if selected_target_id %}&target={{ selected_target_id }}{% endif %}" class="quick-filter-chip {% if selected_severity == 'Élevée' %}is-active{% endif %}">Élevée</a>
+                        <a href="{% url 'vulnerabilities' %}?severity=Moyenne{% if selected_target_id %}&target={{ selected_target_id }}{% endif %}" class="quick-filter-chip {% if selected_severity == 'Moyenne' %}is-active{% endif %}">Moyenne</a>
+                        <a href="{% url 'vulnerabilities' %}" class="quick-filter-chip {% if not selected_severity and not selected_target_id %}is-active{% endif %}">Tous</a>
+                    </div>
+                </article>
+
+                <section class="vulnerability-machine-list {% if selected_severity == 'Critique' %}theme-critique{% elif selected_exposed %}theme-exposed{% else %}theme-default{% endif %}">
+                    {% if machine_rows %}
+                    {% for row in machine_rows %}
+                    <article class="panel-card vulnerability-machine-card {% if row.severity_counts.Critique > 0 %}vuln-card-critique{% elif row.vulnerability_count > 0 %}vuln-card-warning{% else %}vuln-card-clean{% endif %}" id="machine-{{ row.target.id }}">
+                        <div class="section-head machine-card-header">
+                            <div>
+                                <p class="eyebrow">Machine</p>
+                                <h2><a href="{% url 'target_detail' row.target.id %}" class="details-btn">{{ row.target.adresse }}</a></h2>
+                                <p class="section-copy">
+                                    {{ row.target.description|default:"Aucune description" }}
+                                </p>
+                            </div>
+                            <div class="machine-header-right">
+                                <div class="machine-summary">
+                                    <span class="status-badge {% if row.status_label == 'En ligne' %}completed{% elif row.status_label == 'Hors ligne' %}failed{% else %}neutral{% endif %}">
+                                        {{ row.status_label }}
+                                    </span>
+                                    <span class="status-badge {% if row.risk_label == 'Critique' or row.risk_label == 'Élevé' %}failed{% elif row.risk_label == 'Moyen' %}info{% else %}neutral{% endif %}">
+                                        Risque {{ row.risk_label }}
+                                    </span>
+                                </div>
+                                <button type="button" class="machine-card-toggle details-btn" aria-expanded="false" aria-label="Afficher les vulnérabilités">
+                                    <span class="machine-toggle-label">Voir les CVE ({{ row.vulnerability_count }})</span>
+                                    <span class="machine-toggle-caret">▾</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="machine-meta-grid">
+                            <div class="table-note">
+                                Dernier scan :
+                                {% if row.latest_scan %}
+                                    {{ row.latest_scan.date_debut|date:"Y-m-d H:i:s" }}
+                                {% else %}
+                                    Aucun scan terminé
+                                {% endif %}
+                            </div>
+                            <div class="table-note">Total : {{ row.vulnerability_count }}</div>
+                            <button type="button" class="severity-chip severity-critique machine-severity-chip {% if row.severity_counts.Critique == 0 %}severity-chip-zero{% endif %}" data-machine-filter="Critique">Critique {{ row.severity_counts.Critique }}</button>
+                            <button type="button" class="severity-chip severity-elevee machine-severity-chip {% if row.severity_counts.Élevée == 0 %}severity-chip-zero{% endif %}" data-machine-filter="Élevée">Élevée {{ row.severity_counts.Élevée }}</button>
+                            <button type="button" class="severity-chip severity-moyenne machine-severity-chip {% if row.severity_counts.Moyenne == 0 %}severity-chip-zero{% endif %}" data-machine-filter="Moyenne">Moyenne {{ row.severity_counts.Moyenne }}</button>
+                            <button type="button" class="severity-chip severity-faible machine-severity-chip {% if row.severity_counts.Faible == 0 %}severity-chip-zero{% endif %}" data-machine-filter="Faible">Faible {{ row.severity_counts.Faible }}</button>
+                        </div>
+
+                        <div class="machine-card-body details-table-wrap" hidden>
+                            <table class="details-table">
+                                <thead>
+                                    <tr>
+                                        <th>CVE</th>
+                                        <th>Sévérité</th>
+                                        <th>Score</th>
+                                        <th>Service</th>
+                                        <th>Produit</th>
+                                        <th>Actions</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if row.vulnerabilities %}
+                                    {% for vulnerability in row.vulnerabilities %}
+                                    <tr data-severity="{{ vulnerability.severity }}">
+                                        <td data-label="CVE">
+                                            <div class="target-name">{{ vulnerability.cve_id }}</div>
+                                            {% if vulnerability.published %}
+                                            <div class="target-sub">{{ vulnerability.published|date:"Y-m-d" }}</div>
+                                            {% endif %}
+                                        </td>
+
+                                        <td data-label="Sévérité">
+                                            <span class="severity-pill severity-{{ vulnerability.severity|lower }}">
+                                                {{ vulnerability.severity }}
+                                            </span>
+                                        </td>
+
+                                        <td data-label="Score">
+                                            {% if vulnerability.score is not None %}
+                                            <span class="result-red">{{ vulnerability.score }}</span>
+                                            {% else %}
+                                            <span class="cell-main">N/A</span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td data-label="Service">
+                                            <div class="cell-main">{{ vulnerability.service_name|default:"unknown"|title }}</div>
+                                            <div class="target-sub">Port {{ vulnerability.port }}</div>
+                                        </td>
+
+                                        <td data-label="Produit">
+                                            <div class="cell-main">
+                                                {% if vulnerability.product or vulnerability.version %}
+                                                    {{ vulnerability.product|default:"Produit inconnu" }}{% if vulnerability.version %} {{ vulnerability.version }}{% endif %}
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            </div>
+                                        </td>
+
+                                        <td data-label="Actions">
+                                            <div class="action-row">
+                                                <a href="https://nvd.nist.gov/vuln/detail/{{ vulnerability.cve_id }}"
+                                                    target="_blank" class="details-btn">
+                                                    Détails
+                                                </a>
+                                            </div>
+                                        </td>
+
+                                        <td data-label="Description">
+                                            <div class="vulnerability-description">
+                                                {{ vulnerability.description|default:"Aucune description disponible." }}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="7" class="empty-row">
+                                            Aucune vulnérabilité à afficher pour cette machine avec les filtres actuels.
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                    {% endfor %}
+                    {% else %}
+                    <article class="panel-card">
+                        <div class="empty-row">Aucune machine ne correspond aux filtres actuels.</div>
+                    </article>
+                    {% endif %}
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <script src="{% static 'app_dashboard/js/scans_page.js' %}"></script>
+</body>
+
+</html>

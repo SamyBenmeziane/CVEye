@@ -1,11 +1,19 @@
+// Application immediate du theme sur <html> pour eviter le flash au chargement
+(function () {
+    try {
+        var saved = localStorage.getItem("cveye_theme") || "theme-dark";
+        document.documentElement.classList.add(saved);
+    } catch (e) {}
+})();
+
 document.addEventListener("DOMContentLoaded", function () {
-    const body = document.body;
+    const html = document.documentElement;
     const toggleBtn = document.getElementById("themeToggleBtn");
     const storageKey = "cveye_theme";
 
     function applyTheme(theme) {
-        body.classList.remove("theme-dark", "theme-light");
-        body.classList.add(theme);
+        html.classList.remove("theme-dark", "theme-light");
+        html.classList.add(theme);
 
         if (toggleBtn) {
             toggleBtn.textContent =
@@ -20,7 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (toggleBtn) {
         toggleBtn.addEventListener("click", function () {
-            const newTheme = body.classList.contains("theme-dark")
+            const newTheme = html.classList.contains("theme-dark")
                 ? "theme-light"
                 : "theme-dark";
 

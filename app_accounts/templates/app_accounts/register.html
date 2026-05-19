@@ -1,71 +1,203 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Creez votre compte CVEye pour superviser vos serveurs et suivre les vulnerabilites de votre infrastructure reseau.">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
     <title>Inscription - CVEye</title>
     <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/loading_overlay.css' %}">
+    <script>try{var t=localStorage.getItem("cveye_theme")||"theme-dark";document.documentElement.classList.add(t)}catch(e){}</script>
 </head>
-<body class="auth-body">
-    <div class="auth-card">
-        <h1>Inscription</h1>
-
-        {% if messages %}
-            {% for message in messages %}
-                <div class="auth-alert">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-
-        {% if form.non_field_errors %}
-            <div class="auth-alert">
-                {% for error in form.non_field_errors %}
-                    <div>{{ error }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
-        <form method="post" class="auth-form">
-            {% csrf_token %}
-
-            <div class="auth-field">
-                <label for="{{ form.username.id_for_label }}">Nom d'utilisateur</label>
-                {{ form.username }}
-                {% for error in form.username.errors %}
-                    <small class="field-error">{{ error }}</small>
-                {% endfor %}
-            </div>
-
-            <div class="auth-field">
-                <label for="{{ form.email.id_for_label }}">Email</label>
-                {{ form.email }}
-                {% for error in form.email.errors %}
-                    <small class="field-error">{{ error }}</small>
-                {% endfor %}
-            </div>
-
-            <div class="auth-field">
-                <label for="{{ form.password1.id_for_label }}">Mot de passe</label>
-                {{ form.password1 }}
-                {% for error in form.password1.errors %}
-                    <small class="field-error">{{ error }}</small>
-                {% endfor %}
-            </div>
-
-            <div class="auth-field">
-                <label for="{{ form.password2.id_for_label }}">Confirmer le mot de passe</label>
-                {{ form.password2 }}
-                {% for error in form.password2.errors %}
-                    <small class="field-error">{{ error }}</small>
-                {% endfor %}
-            </div>
-
-            <button type="submit" class="auth-btn">S'inscrire</button>
-        </form>
-
-        <p class="auth-link">
-            Déjà un compte ? <a href="{% url 'accounts:login' %}">Se connecter</a>
-        </p>
+<body class="auth-body theme-dark">
+    <div class="theme-toggle-bar">
+        <button type="button" id="themeToggleBtn" class="theme-toggle-btn">
+            Basculer en mode clair
+        </button>
     </div>
+    <main class="auth-shell">
+        <section class="auth-showcase">
+            <p class="auth-eyebrow">Onboarding</p>
+            <h1>Démarrez rapidement avec une interface moderne et lisible.</h1>
+            <p class="auth-copy">
+                Créez votre compte pour centraliser la supervision de vos serveurs, visualiser les scans
+                et suivre les vulnérabilités dans une interface unifiée.
+            </p>
+            <div class="auth-feature-list">
+                <div class="auth-feature-card">
+                    <strong>Configuration rapide</strong>
+                    <span>Creation de compte simple avec parcours clair.</span>
+                </div>
+                <div class="auth-feature-card">
+                    <strong>Vue centralisée</strong>
+                    <span>Retrouvez l'ensemble des données dans un même espace.</span>
+                </div>
+                <div class="auth-feature-card">
+                    <strong>Design responsive</strong>
+                    <span>Affichage net sur tous les formats d'écran.</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="auth-card">
+            <div class="auth-card-head">
+                <p class="auth-eyebrow">Inscription</p>
+                <h2>Créer un compte</h2>
+                <p>Renseignez vos informations pour initialiser votre accès.</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="auth-alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            {% if form.non_field_errors %}
+                <div class="auth-alert">
+                    {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+
+                <div class="auth-field">
+                    <label for="{{ form.first_name.id_for_label }}">Prénom</label>
+                    {{ form.first_name }}
+                    {% for error in form.first_name.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <div class="auth-field">
+                    <label for="{{ form.last_name.id_for_label }}">Nom</label>
+                    {{ form.last_name }}
+                    {% for error in form.last_name.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <div class="auth-field">
+                    <label for="{{ form.email.id_for_label }}">Email</label>
+                    {{ form.email }}
+                    {% for error in form.email.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <p class="auth-link">Le nom d'utilisateur sera généré automatiquement au format <strong>prénom.nom</strong>.</p>
+
+                <div class="auth-field">
+                    <label for="{{ form.password1.id_for_label }}">Mot de passe</label>
+                    <div class="auth-password-wrapper">
+                        {{ form.password1 }}
+                        <button type="button" class="auth-password-toggle" id="passwordToggle1"
+                                aria-label="Afficher le mot de passe" aria-pressed="false">
+                            <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg class="icon-eye-slash" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M3 3l18 18M10.6 5.1A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.4 4.3M6.6 6.6A17.6 17.6 0 0 0 2 12s3.5 7 10 7c1.6 0 3.1-.4 4.4-1M9.9 9.9a3 3 0 1 0 4.2 4.2"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <small class="auth-caps-warning" id="capsLockWarning1" hidden>
+                        Verrouillage majuscules activé
+                    </small>
+                    {% for error in form.password1.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <div class="auth-field">
+                    <label for="{{ form.password2.id_for_label }}">Confirmer le mot de passe</label>
+                    <div class="auth-password-wrapper">
+                        {{ form.password2 }}
+                        <button type="button" class="auth-password-toggle" id="passwordToggle2"
+                                aria-label="Afficher le mot de passe" aria-pressed="false">
+                            <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg class="icon-eye-slash" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M3 3l18 18M10.6 5.1A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.4 4.3M6.6 6.6A17.6 17.6 0 0 0 2 12s3.5 7 10 7c1.6 0 3.1-.4 4.4-1M9.9 9.9a3 3 0 1 0 4.2 4.2"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <small class="auth-caps-warning" id="capsLockWarning2" hidden>
+                        Verrouillage majuscules activé
+                    </small>
+                    {% for error in form.password2.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="auth-btn" data-loading-message="Création du compte en cours...">S'inscrire</button>
+            </form>
+
+            <p class="auth-link">
+                Deja un compte ? <a href="{% url 'accounts:login' %}">Se connecter</a>
+            </p>
+        </section>
+    </main>
+    <script src="{% static 'app_dashboard/js/theme.js' %}"></script>
+    <script src="{% static 'app_dashboard/js/loading_overlay.js' %}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            function setupPasswordField(input, toggleBtn, capsWarning) {
+                if (input && toggleBtn) {
+                    toggleBtn.addEventListener("click", function () {
+                        var isPassword = input.type === "password";
+                        input.type = isPassword ? "text" : "password";
+                        toggleBtn.classList.toggle("is-visible", isPassword);
+                        toggleBtn.setAttribute("aria-pressed", isPassword ? "true" : "false");
+                        toggleBtn.setAttribute(
+                            "aria-label",
+                            isPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
+                        );
+                    });
+                }
+                if (input && capsWarning) {
+                    var checkCaps = function (event) {
+                        if (event.getModifierState && event.getModifierState("CapsLock")) {
+                            capsWarning.hidden = false;
+                        } else {
+                            capsWarning.hidden = true;
+                        }
+                    };
+                    input.addEventListener("keydown", checkCaps);
+                    input.addEventListener("keyup", checkCaps);
+                    input.addEventListener("blur", function () {
+                        capsWarning.hidden = true;
+                    });
+                }
+            }
+
+            setupPasswordField(
+                document.getElementById("{{ form.password1.id_for_label }}"),
+                document.getElementById("passwordToggle1"),
+                document.getElementById("capsLockWarning1")
+            );
+            setupPasswordField(
+                document.getElementById("{{ form.password2.id_for_label }}"),
+                document.getElementById("passwordToggle2"),
+                document.getElementById("capsLockWarning2")
+            );
+        });
+    </script>
 </body>
 </html>
+

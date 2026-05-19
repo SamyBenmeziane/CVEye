@@ -4,13 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP bannie - CVEye</title>
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
+    <title>Accès bloqué - CVEye</title>
     <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+    <script>try{var t=localStorage.getItem("cveye_theme")||"theme-dark";document.documentElement.classList.add(t)}catch(e){}</script>
 </head>
-<body class="auth-body">
+<body class="auth-body theme-dark">
+    <div class="theme-toggle-bar">
+        <button type="button" id="themeToggleBtn" class="theme-toggle-btn">
+            Basculer en mode clair
+        </button>
+    </div>
     <div class="auth-card">
         <h1>Accès bloqué</h1>
-        <p>Votre adresse IP a été bannie après 3 tentatives de connexion invalides.</p>
+        <p>Contactez l’administrateur.</p>
     </div>
+    <script src="{% static 'app_dashboard/js/theme.js' %}"></script>
 </body>
 </html>

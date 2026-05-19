@@ -1,0 +1,264 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
+    <title>Rapport PDF - CVEye</title>
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/scans_page.css' %}">
+    <style>
+        .report-page {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        .report-card {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .report-option-list {
+            display: grid;
+            gap: 0.9rem;
+        }
+
+        .report-option {
+            display: grid;
+            gap: 0.45rem;
+            padding: 1rem 1.1rem;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .report-option-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+        }
+
+        .report-option p {
+            margin: 0;
+            color: #64748b;
+        }
+
+        .report-count-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.35rem;
+        }
+
+        .report-count-input {
+            width: 92px;
+            min-height: 42px;
+            padding: 0 0.75rem;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            background: rgba(255, 255, 255, 0.06);
+            color: inherit;
+        }
+
+        .report-summary {
+            display: grid;
+            gap: 0.5rem;
+            color: #0f172a;
+            font-weight: 600;
+        }
+    </style>
+    <script>try{if(localStorage.getItem("cveye.theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
+</head>
+<body>
+<div class="app-layout sidebar-open" id="appLayout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+            <div class="sidebar-brand-row">
+            <a href="{% url 'dashboard' %}" class="brand">
+                <div class="brand-logo">
+                    <img src="{% static 'app_dashboard/img/logo_cveye.png' %}" alt="Logo CVEye" class="brand-logo-image">
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title">CVEye</div>
+                    <div class="brand-subtitle">Monitoring security</div>
+                </div>
+            </a>
+                <button type="button" class="sidebar-toggle sidebar-toggle-nav" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Navigation principale">
+            {% if request.user.is_superuser %}
+            <a href="{% url 'admin_console' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
+                <span class="nav-label">Administration</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link active">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
+            </a>
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <span class="nav-label">Recherche de vulnérabilités</span>
+            </a>
+            {% else %}
+            <a href="{% url 'dashboard' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4" /></svg>
+                </span>
+                <span class="nav-label">Tableau de bord</span>
+            </a>
+            <a href="{% url 'targets' %}" class="nav-link active">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4Z" /><path d="M9 12l2 2 4-4" /></svg>
+                </span>
+                <span class="nav-label">Serveurs</span>
+            </a>
+            <a href="{% url 'vulnerabilities' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg"><path d="M12 3l8 4.5v5c0 5.2-3.6 7.8-8 9.5-4.4-1.7-8-4.3-8-9.5v-5L12 3Z" /><path d="M12 8v5" /><path d="M12 17h.01" /></svg>
+                </span>
+                <span class="nav-label">Vulnérabilités</span>
+            </a>
+            <a href="{% url 'vulnerabilities_search' %}" class="nav-link">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="nav-icon-svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <span class="nav-label">Recherche de vulnérabilités</span>
+            </a>
+            {% endif %}
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button type="button" class="sidebar-toggle sidebar-toggle-mobile" data-sidebar-toggle aria-label="Afficher ou masquer la navigation" aria-expanded="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <div class="page-intro">
+                    <p class="eyebrow">Rapport PDF</p>
+                    <h1>{{ target.adresse }}</h1>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <a href="{% url 'target_detail' target.id %}" class="details-btn">Retour au serveur</a>
+            </div>
+        </header>
+
+        <section class="page-content report-page">
+            {% if messages %}
+                <div class="toast-stack">
+                    {% for message in messages %}
+                        <div class="alert toast {% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}warning{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <article class="panel-card report-card">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">Configuration</p>
+                        <h2>Choisir le contenu du rapport</h2>
+                    </div>
+                </div>
+
+                <div class="report-summary">
+                    <span>Machine : {{ target.adresse }}</span>
+                    <span>Nombre total de scans disponibles : {{ scans_count }}</span>
+                </div>
+
+                {% if scans_count %}
+                    <form method="post" action="{% url 'download_target_report_pdf' target.id %}" class="modern-form" data-skip-loading="true">
+                        {% csrf_token %}
+                        <div class="report-option-list">
+                            <label class="report-option">
+                                <div class="report-option-header">
+                                    <input type="radio" name="report_scope" value="latest" checked>
+                                    <span>Dernier scan</span>
+                                </div>
+                                <p>Option par défaut. Génère un rapport à partir du scan le plus récent.</p>
+                            </label>
+
+                            <label class="report-option">
+                                <div class="report-option-header">
+                                    <input type="radio" name="report_scope" value="all">
+                                    <span>Tous les scans</span>
+                                </div>
+                                <p>Inclut l'historique complet disponible pour cette machine.</p>
+                            </label>
+
+                            <label class="report-option">
+                                <div class="report-option-header">
+                                    <input type="radio" name="report_scope" value="count">
+                                    <span>N scans</span>
+                                </div>
+                                <p>Permet de choisir un nombre précis de scans récents à inclure.</p>
+                                <div class="report-count-row">
+                                    <label for="reportCountInput">Nombre de scans</label>
+                                    <input id="reportCountInput" class="report-count-input" type="number" name="count" min="1" max="{{ scans_count }}" value="{{ default_count }}" disabled>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="primary-btn">Télécharger le rapport</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="empty-state">
+                        <h3>Aucun scan disponible</h3>
+                        <p>Vous devez lancer au moins un scan avant de générer un rapport PDF.</p>
+                    </div>
+                {% endif %}
+            </article>
+        </section>
+    </main>
+</div>
+
+<script src="{% static 'app_dashboard/js/scans_page.js' %}"></script>
+<script>
+    const scopeInputs = document.querySelectorAll('input[name="report_scope"]');
+    const countInput = document.getElementById('reportCountInput');
+
+    function syncReportCountState() {
+        if (!countInput) {
+            return;
+        }
+
+        const selectedScope = document.querySelector('input[name="report_scope"]:checked');
+        countInput.disabled = !selectedScope || selectedScope.value !== 'count';
+    }
+
+    scopeInputs.forEach((input) => {
+        input.addEventListener('change', syncReportCountState);
+    });
+
+    syncReportCountState();
+</script>
+</body>
+</html>

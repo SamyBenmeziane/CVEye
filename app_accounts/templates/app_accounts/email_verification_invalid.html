@@ -4,10 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
     <title>Lien invalide - CVEye</title>
     <link rel="stylesheet" href="{% static 'app_dashboard/css/auth.css' %}">
+    <script>try{var t=localStorage.getItem("cveye_theme")||"theme-dark";document.documentElement.classList.add(t)}catch(e){}</script>
 </head>
-<body class="auth-body">
+<body class="auth-body theme-dark">
+    <div class="theme-toggle-bar">
+        <button type="button" id="themeToggleBtn" class="theme-toggle-btn">
+            Basculer en mode clair
+        </button>
+    </div>
     <div class="auth-card">
         <h1>Lien invalide ou expiré</h1>
         <p>Le lien de vérification n'est plus valide.</p>
@@ -15,5 +22,6 @@
             <a href="{% url 'accounts:login' %}">Retour à la connexion</a>
         </p>
     </div>
+    <script src="{% static 'app_dashboard/js/theme.js' %}"></script>
 </body>
 </html>

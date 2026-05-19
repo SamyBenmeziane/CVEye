@@ -4,10 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{% static 'app_dashboard/img/logo_cveye.png' %}">
     <title>Installation - CVEye</title>
     <link rel="stylesheet" href="{% static 'app_dashboard/css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'app_dashboard/css/loading_overlay.css' %}">
+    <script>try{var t=localStorage.getItem("cveye_theme")||"theme-dark";document.documentElement.classList.add(t)}catch(e){}</script>
 </head>
-<body class="install-page-body theme-dark">
+<body class="install-page-body">
     <div class="theme-toggle-bar">
         <button type="button" id="themeToggleBtn" class="theme-toggle-btn">
             Basculer en mode clair
@@ -56,11 +59,38 @@
                     <h2>Premier administrateur</h2>
                     <div class="install-grid">
                         <div class="install-field">
+                            <label for="{{ form.admin_first_name.id_for_label }}">Prénom administrateur</label>
+                            {{ form.admin_first_name }}
+                            {% for error in form.admin_first_name.errors %}
+                                <small class="field-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+
+                        <div class="install-field">
+                            <label for="{{ form.admin_last_name.id_for_label }}">Nom administrateur</label>
+                            {{ form.admin_last_name }}
+                            {% for error in form.admin_last_name.errors %}
+                                <small class="field-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+
+                        <div class="install-field">
                             <label for="{{ form.admin_email.id_for_label }}">Email administrateur</label>
                             {{ form.admin_email }}
                             {% for error in form.admin_email.errors %}
                                 <small class="field-error">{{ error }}</small>
                             {% endfor %}
+                        </div>
+
+                        <div class="install-field">
+                            <label for="generatedUsernamePreview">Nom d'utilisateur généré</label>
+                            <input
+                                type="text"
+                                id="generatedUsernamePreview"
+                                value=""
+                                placeholder="Sera généré automatiquement"
+                                disabled
+                            >
                         </div>
 
                         <div class="install-field">
@@ -124,7 +154,7 @@
                 </div>
 
                 <div class="install-actions">
-                    <button type="submit" class="install-submit-btn">
+                    <button type="submit" class="install-submit-btn" data-loading-message="Installation en cours...">
                         Finaliser l’installation
                     </button>
                 </div>
@@ -133,5 +163,42 @@
     </div>
 
     <script src="{% static 'app_dashboard/js/theme.js' %}"></script>
+    <script src="{% static 'app_dashboard/js/loading_overlay.js' %}"></script>
+    <script>
+        (function () {
+            const firstNameInput = document.getElementById("{{ form.admin_first_name.id_for_label }}");
+            const lastNameInput = document.getElementById("{{ form.admin_last_name.id_for_label }}");
+            const previewInput = document.getElementById("generatedUsernamePreview");
+
+            function normalizePart(value) {
+                return (value || "")
+                    .normalize("NFKD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^a-zA-Z0-9]+/g, " ")
+                    .trim()
+                    .toLowerCase()
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .join(".");
+            }
+
+            function updatePreview() {
+                const firstPart = normalizePart(firstNameInput ? firstNameInput.value : "");
+                const lastPart = normalizePart(lastNameInput ? lastNameInput.value : "");
+                const username = [firstPart, lastPart].filter(Boolean).join(".") || "utilisateur";
+                previewInput.value = username.slice(0, 150);
+            }
+
+            if (firstNameInput) {
+                firstNameInput.addEventListener("input", updatePreview);
+            }
+
+            if (lastNameInput) {
+                lastNameInput.addEventListener("input", updatePreview);
+            }
+
+            updatePreview();
+        })();
+    </script>
 </body>
 </html>
