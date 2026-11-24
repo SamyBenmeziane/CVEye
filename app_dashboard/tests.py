@@ -7,7 +7,15 @@ from app_dashboard.risk_utils import (
     compute_vulnerability_count_risk_label,
     normalize_severity_label,
 )
-from app_dashboard.views import build_machine_vulnerabilities_context
+from app_dashboard.reporting import (
+    build_target_report_filename,
+    sanitize_filename,
+)
+from app_dashboard.views import (
+    build_empty_severity_counts,
+    build_machine_vulnerabilities_context,
+    get_server_header,
+)
 from app_security.models import Vulnerability
 
 
@@ -95,3 +103,78 @@ class BuildMachineVulnerabilitiesContextTest(TestCase):
         self.assertIn("10.10.0.1", adresses)
         self.assertIn("10.10.0.2", adresses)
         self.assertEqual(len(adresses), 2)
+
+
+class SanitizeFilenameTest(TestCase):
+    """Tests pour la fonction sanitize_filename utilisee dans les rapports PDF."""
+
+    def test_remplace_les_caracteres_speciaux(self):
+        """sanitize_filename doit remplacer les caracteres non-alphanumeriques par des tirets"""
+        self.assertEqual(sanitize_filename("192.168.1.1"), "192.168.1.1")
+        self.assertEqual(sanitize_filename("exemple.fr"), "exemple.fr")
+        self.assertEqual(sanitize_filename("mon serveur"), "mon-serveur")
+
+    def test_supprime_les_tirets_de_bord(self):
+        """sanitize_filename doit retirer les tirets en debut et fin"""
+        self.assertEqual(sanitize_filename("/path/to/x/"), "path-to-x")
+
+    def test_valeur_vide_donne_machine(self):
+        """sanitize_filename sur une valeur vide doit retourner 'machine'"""
+        self.assertEqual(sanitize_filename(""), "machine")
+        self.assertEqual(sanitize_filename(None), "machine")
+
+
+class BuildTargetReportFilenameTest(TestCase):
+    """Tests pour la generation du nom de fichier des rapports PDF."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="rep_user", password="x")
+        self.target = Cible.objects.create(owner=self.user, adresse="192.168.1.10")
+
+    def test_un_seul_scan_donne_dernier_scan(self):
+        """Pour 1 scan, le suffixe doit etre 'dernier-scan'"""
+        nom = build_target_report_filename(self.target, 1)
+        self.assertEqual(nom, "rapport-192.168.1.10-dernier-scan.pdf")
+
+    def test_plusieurs_scans_donne_un_pluriel(self):
+        """Pour N scans, le suffixe doit indiquer le nombre"""
+        nom = build_target_report_filename(self.target, 3)
+        self.assertEqual(nom, "rapport-192.168.1.10-3-derniers-scans.pdf")
+
+
+class GetServerHeaderTest(TestCase):
+    """Tests pour la lecture insensible a la casse de l'en-tete Server."""
+
+    def test_trouve_le_header_server(self):
+        """get_server_header doit retourner la valeur de l'en-tete 'server'"""
+        headers = {"Server": "Apache/2.4.41", "Content-Type": "text/html"}
+        self.assertEqual(get_server_header(headers), "Apache/2.4.41")
+
+    def test_insensible_a_la_casse(self):
+        """get_server_header doit fonctionner avec n'importe quelle casse"""
+        self.assertEqual(get_server_header({"SERVER": "nginx"}), "nginx")
+        self.assertEqual(get_server_header({"server": "nginx"}), "nginx")
+
+    def test_retourne_none_si_absent(self):
+        """get_server_header doit retourner None si l'en-tete n'existe pas"""
+        self.assertIsNone(get_server_header({"Content-Type": "text/html"}))
+        self.assertIsNone(get_server_header({}))
+
+    def test_retourne_none_si_pas_un_dict(self):
+        """get_server_header doit retourner None si l'argument n'est pas un dict"""
+        self.assertIsNone(get_server_header(None))
+        self.assertIsNone(get_server_header("string"))
+
+
+class BuildEmptySeverityCountsTest(TestCase):
+    """Tests pour le helper qui initialise les compteurs de severite a zero."""
+
+    def test_initialise_toutes_les_severites_a_zero(self):
+        """build_empty_severity_counts doit creer un dict avec toutes les severites a 0"""
+        counts = build_empty_severity_counts()
+
+        self.assertEqual(counts["Critique"], 0)
+        self.assertEqual(counts["Élevée"], 0)
+        self.assertEqual(counts["Moyenne"], 0)
+        self.assertEqual(counts["Faible"], 0)
+        self.assertEqual(counts["Inconnue"], 0)

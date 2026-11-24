@@ -1,9 +1,14 @@
+from datetime import datetime, timezone as dt_timezone
 from django.test import TestCase
 from unittest.mock import patch
 
 from app_scan.scanner import SocketScanner
-
-from app_scan.scan_execution import get_service_lookup_key
+from app_scan.scheduler_utils import calculer_prochain_scan
+from app_scan.progress import set_scan_progress, get_scan_progress, pop_scan_progress
+from app_scan.scan_execution import (
+    get_service_lookup_key,
+    build_scan_version_label,
+)
 from app_core.models import Cible, Scan, Service
 from django.contrib.auth.models import User
 from unittest.mock import patch
@@ -174,6 +179,170 @@ class APITest(TestCase):
 
         self.assertEqual(data["vulnerabilities"][0]["cve"]["id"], "CVE-2024-1234")
         
+class CalculerProchainScanTest(TestCase):
+    """Tests pour la planification des scans periodiques."""
+
+    def setUp(self):
+        self.date_base = datetime(2026, 1, 1, 12, 0, 0, tzinfo=dt_timezone.utc)
+
+    def test_periodicite_toutes_les_heures(self):
+        """toutes_les_heures doit ajouter exactement 1 heure"""
+        resultat = calculer_prochain_scan(self.date_base, "toutes_les_heures")
+        self.assertEqual(resultat.hour, 13)
+        self.assertEqual(resultat.day, 1)
+
+    def test_periodicite_tous_les_jours(self):
+        """tous_les_jours doit ajouter exactement 1 jour"""
+        resultat = calculer_prochain_scan(self.date_base, "tous_les_jours")
+        self.assertEqual(resultat.day, 2)
+
+    def test_periodicite_toutes_les_semaines(self):
+        """toutes_les_semaines doit ajouter exactement 7 jours"""
+        resultat = calculer_prochain_scan(self.date_base, "toutes_les_semaines")
+        self.assertEqual(resultat.day, 8)
+
+    def test_periodicite_tous_les_mois(self):
+        """tous_les_mois doit ajouter 30 jours"""
+        resultat = calculer_prochain_scan(self.date_base, "tous_les_mois")
+        self.assertEqual(resultat.day, 31)
+
+    def test_periodicite_inconnue_retourne_none(self):
+        """Une periodicite invalide doit retourner None"""
+        self.assertIsNone(calculer_prochain_scan(self.date_base, "jamais"))
+        self.assertIsNone(calculer_prochain_scan(self.date_base, ""))
+        self.assertIsNone(calculer_prochain_scan(self.date_base, None))
+
+
+class NormalizePortsTest(TestCase):
+    """Tests pour la normalisation de la liste de ports du scanner."""
+
+    def test_liste_vide_donne_tous_les_ports(self):
+        """Sans ports specifies, le scanner doit cibler les 65535 ports"""
+        scanner = SocketScanner("127.0.0.1", ports=[])
+        self.assertEqual(scanner.total_ports, 65535)
+
+    def test_liste_avec_doublons_est_dedupliquee(self):
+        """Les doublons dans la liste de ports doivent etre supprimes"""
+        scanner = SocketScanner("127.0.0.1", ports=[80, 80, 443, 80, 443])
+        self.assertEqual(scanner.total_ports, 2)
+        self.assertIn(80, scanner.ports)
+        self.assertIn(443, scanner.ports)
+
+    def test_ports_hors_plage_sont_ignores(self):
+        """Les ports < 1 ou > 65535 doivent etre filtres"""
+        scanner = SocketScanner("127.0.0.1", ports=[0, 80, 100000, 443, -5])
+        self.assertEqual(set(scanner.ports), {80, 443})
+
+    def test_valeurs_non_numeriques_sont_ignorees(self):
+        """Les valeurs qui ne peuvent pas etre converties en int doivent etre ignorees"""
+        scanner = SocketScanner("127.0.0.1", ports=["80", "abc", None, 443])
+        self.assertEqual(set(scanner.ports), {80, 443})
+
+
+class BuildCpeFieldsTest(TestCase):
+    """Tests pour la construction des chaines CPE."""
+
+    def test_cpe_name_complet_si_toutes_infos_connues(self):
+        """Avec part, vendor, produit et version connus, on construit un cpe_name complet"""
+        scanner = SocketScanner("127.0.0.1", ports=[80])
+        info = {
+            "part": "a",
+            "vendor": "apache",
+            "produit": "Apache",
+            "version": "2.4.41",
+            "cpe_name": None,
+            "cpe_match_string": None,
+        }
+        scanner.build_cpe_fields(info)
+
+        self.assertEqual(
+            info["cpe_name"],
+            "cpe:2.3:a:apache:http_server:2.4.41:*:*:*:*:*:*:*",
+        )
+        self.assertIsNone(info["cpe_match_string"])
+
+    def test_cpe_match_string_avec_wildcards_si_infos_incompletes(self):
+        """Si une info est manquante, on construit un cpe_match_string avec des wildcards"""
+        scanner = SocketScanner("127.0.0.1", ports=[80])
+        info = {
+            "part": "a",
+            "vendor": "???",
+            "produit": "Apache",
+            "version": "???",
+            "cpe_name": None,
+            "cpe_match_string": None,
+        }
+        scanner.build_cpe_fields(info)
+
+        self.assertIsNone(info["cpe_name"])
+        self.assertIn("apache", info["cpe_match_string"])
+        self.assertIn("http_server", info["cpe_match_string"])
+
+
+class BuildScanVersionLabelTest(TestCase):
+    """Tests pour le label encodant les ports cibles dans le champ version_scanner."""
+
+    def test_sans_ports_retourne_label_simple(self):
+        """Pour un scan complet, le label doit etre simplement SocketScanner"""
+        self.assertEqual(build_scan_version_label(), "SocketScanner")
+        self.assertEqual(build_scan_version_label([]), "SocketScanner")
+        self.assertEqual(build_scan_version_label(None), "SocketScanner")
+
+    def test_avec_ports_encode_la_liste_triee(self):
+        """Les ports doivent etre tries et dedupliques dans le label"""
+        self.assertEqual(
+            build_scan_version_label([443, 80, 443]),
+            "SocketScanner[ports:80,443]",
+        )
+
+
+class ScanProgressTest(TestCase):
+    """Tests pour le suivi en memoire de la progression des scans."""
+
+    def setUp(self):
+        # On garantit que la cle est nettoyee entre les tests
+        pop_scan_progress("test-scan-1")
+        pop_scan_progress("test-scan-2")
+
+    def tearDown(self):
+        pop_scan_progress("test-scan-1")
+        pop_scan_progress("test-scan-2")
+
+    def test_set_puis_get_retourne_le_payload(self):
+        """Apres set_scan_progress, get_scan_progress doit retourner les memes valeurs"""
+        set_scan_progress("test-scan-1", status="en_cours", ports_open=5)
+        payload = get_scan_progress("test-scan-1")
+
+        self.assertEqual(payload["status"], "en_cours")
+        self.assertEqual(payload["ports_open"], 5)
+        # La cle interne _expires_at ne doit pas etre exposee
+        self.assertNotIn("_expires_at", payload)
+
+    def test_set_fusionne_les_valeurs(self):
+        """Plusieurs set_scan_progress doivent fusionner les cles existantes"""
+        set_scan_progress("test-scan-1", status="en_cours", ports_open=2)
+        set_scan_progress("test-scan-1", ports_open=10)
+
+        payload = get_scan_progress("test-scan-1")
+        # status reste, ports_open est mis a jour
+        self.assertEqual(payload["status"], "en_cours")
+        self.assertEqual(payload["ports_open"], 10)
+
+    def test_get_retourne_none_si_inconnu(self):
+        """get_scan_progress doit retourner None pour un scan jamais enregistre"""
+        self.assertIsNone(get_scan_progress("scan-jamais-vu"))
+
+    def test_pop_supprime_le_payload(self):
+        """pop_scan_progress doit retourner le payload puis le supprimer"""
+        set_scan_progress("test-scan-2", status="complete")
+
+        payload = pop_scan_progress("test-scan-2")
+        self.assertEqual(payload["status"], "complete")
+
+        # Apres pop, get doit retourner None
+        self.assertIsNone(get_scan_progress("test-scan-2"))
+
+
 class FullFlowTest(TestCase):
 
     def test_full_service_key_flow(self):

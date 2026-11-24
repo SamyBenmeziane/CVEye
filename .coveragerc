@@ -1,0 +1,18 @@
+[run]
+source = .
+omit =
+    */migrations/*
+    */venv/*
+    */tests.py
+    manage.py
+    seed_data.py
+    CVEye/settings.py
+    CVEye/wsgi.py
+    CVEye/asgi.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def __str__
+    raise NotImplementedError

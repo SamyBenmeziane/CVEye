@@ -3,7 +3,15 @@ from django.contrib.auth.models import User
 from django.db import IntegrityError
 
 from app_accounts.models import BannedIP, LoginAttempt, UserProfile
-from app_accounts.utils import build_username_base, get_client_ip, is_ip_banned, register_failed_attempt, reset_attempts
+from app_accounts.utils import (
+    build_username_base,
+    generate_unique_username,
+    get_client_ip,
+    is_ip_banned,
+    register_failed_attempt,
+    reset_attempts,
+    sync_user_activation_state,
+)
 from django.urls import reverse
 
 
@@ -244,3 +252,165 @@ class ViewsTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
+
+
+class GenerateUniqueUsernameTest(TestCase):
+    """Tests pour la generation du nom d'utilisateur unique."""
+
+    def test_premier_nom_disponible(self):
+        """Si la base n'est pas prise, on retourne directement le nom de base"""
+        nom = generate_unique_username("Jean", "Dupont")
+        self.assertEqual(nom, "jean.dupont")
+
+    def test_ajoute_un_suffixe_si_deja_pris(self):
+        """Si jean.dupont existe, on doit retourner jean.dupont2"""
+        User.objects.create_user(username="jean.dupont", password="x")
+
+        nom = generate_unique_username("Jean", "Dupont")
+        self.assertEqual(nom, "jean.dupont2")
+
+    def test_incremente_le_suffixe(self):
+        """Si jean.dupont et jean.dupont2 existent, on doit retourner jean.dupont3"""
+        User.objects.create_user(username="jean.dupont", password="x")
+        User.objects.create_user(username="jean.dupont2", password="x")
+
+        nom = generate_unique_username("Jean", "Dupont")
+        self.assertEqual(nom, "jean.dupont3")
+
+    def test_exclude_user_id_permet_de_garder_son_nom(self):
+        """Lors d'une mise a jour, on doit pouvoir conserver son propre nom d'utilisateur"""
+        user = User.objects.create_user(username="alice.dupont", password="x")
+
+        # On verifie qu'on peut "regenerer" le meme nom en s'excluant
+        nom = generate_unique_username("Alice", "Dupont", exclude_user_id=user.pk)
+        self.assertEqual(nom, "alice.dupont")
+
+    def test_base_vide_donne_utilisateur(self):
+        """Si prenom et nom sont vides, on doit avoir un nom par defaut"""
+        nom = generate_unique_username("", "")
+        self.assertEqual(nom, "utilisateur")
+
+
+class SyncUserActivationStateTest(TestCase):
+    """Tests pour la synchronisation du flag is_active avec le profil."""
+
+    def test_superadmin_est_toujours_actif(self):
+        """Un superuser doit rester actif meme sans profil valide"""
+        admin = User.objects.create_superuser(
+            username="admin",
+            password="x",
+            email="admin@x.fr",
+        )
+        admin.is_active = False
+        admin.save()
+
+        profile = UserProfile.objects.create(
+            user=admin,
+            email_verified=False,
+            admin_approved=False,
+        )
+
+        sync_user_activation_state(admin, profile=profile)
+        admin.refresh_from_db()
+
+        self.assertTrue(admin.is_active)
+
+    def test_utilisateur_valide_devient_actif(self):
+        """Un user avec email_verified=True ET admin_approved=True doit etre actif"""
+        user = User.objects.create_user(username="bob", password="x")
+        user.is_active = False
+        user.save()
+
+        profile = UserProfile.objects.create(
+            user=user,
+            email_verified=True,
+            admin_approved=True,
+            admin_disabled=False,
+        )
+
+        sync_user_activation_state(user, profile=profile)
+        user.refresh_from_db()
+
+        self.assertTrue(user.is_active)
+
+    def test_utilisateur_non_valide_devient_inactif(self):
+        """Un user qui ne remplit pas les conditions doit etre desactive"""
+        user = User.objects.create_user(username="charlie", password="x")
+        user.is_active = True
+        user.save()
+
+        profile = UserProfile.objects.create(
+            user=user,
+            email_verified=False,
+            admin_approved=False,
+        )
+
+        sync_user_activation_state(user, profile=profile)
+        user.refresh_from_db()
+
+        self.assertFalse(user.is_active)
+
+    def test_admin_disabled_force_inactif(self):
+        """Un user avec admin_disabled=True doit etre desactive meme s'il est verifie"""
+        user = User.objects.create_user(username="david", password="x")
+
+        profile = UserProfile.objects.create(
+            user=user,
+            email_verified=True,
+            admin_approved=True,
+            admin_disabled=True,
+        )
+
+        sync_user_activation_state(user, profile=profile)
+        user.refresh_from_db()
+
+        self.assertFalse(user.is_active)
+
+
+class UserProfileAdditionalTest(TestCase):
+    """Tests complementaires pour UserProfile."""
+
+    def test_can_login_false_si_admin_disabled(self):
+        """can_login doit retourner False si admin_disabled=True meme avec email_verified et admin_approved"""
+        user = User.objects.create_user(username="eve", password="x")
+        profile = UserProfile.objects.create(
+            user=user,
+            email_verified=True,
+            admin_approved=True,
+            admin_disabled=True,
+        )
+
+        self.assertFalse(profile.can_login())
+
+    def test_is_superadmin_pour_un_superuser(self):
+        """is_superadmin doit retourner True pour un superuser Django"""
+        admin = User.objects.create_superuser(
+            username="root_admin",
+            password="x",
+            email="r@x.fr",
+        )
+        profile = UserProfile.objects.create(user=admin)
+
+        self.assertTrue(profile.is_superadmin)
+
+    def test_is_superadmin_pour_un_user_normal(self):
+        """is_superadmin doit retourner False pour un user classique"""
+        user = User.objects.create_user(username="frank", password="x")
+        profile = UserProfile.objects.create(user=user)
+
+        self.assertFalse(profile.is_superadmin)
+
+    def test_superadmin_peut_toujours_se_connecter(self):
+        """can_login doit retourner True pour un superuser meme sans email_verified"""
+        admin = User.objects.create_superuser(
+            username="grace",
+            password="x",
+            email="g@x.fr",
+        )
+        profile = UserProfile.objects.create(
+            user=admin,
+            email_verified=False,
+            admin_approved=False,
+        )
+
+        self.assertTrue(profile.can_login())
